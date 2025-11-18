@@ -403,7 +403,7 @@ export default function Admin() {
             <Link className="btn btn-sm btn-outline-brand" to="/pedido">Caja / Pedido</Link>
             <Link className="btn btn-sm btn-brand" to="/admin">Productos</Link>
             <Link className="btn btn-sm btn-outline-brand" to="/admin/auditoria">Auditoría</Link>
-            <Link className="btn btn-sm btn-outline-brand" to="/admin/facturas">Facturas</Link>
+            <Link className="btn btn-sm btn-outline-brand" to="/admin/facturas">Resumen</Link>
             <Link className="btn btn-sm btn-outline-brand" to="/admin/inventario">Inventario</Link>
             <button onClick={logout} className="btn btn-sm btn-outline-secondary">Cerrar sesión</button>
           </div>

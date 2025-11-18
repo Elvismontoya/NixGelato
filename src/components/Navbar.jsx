@@ -8,7 +8,7 @@ export default function Navbar() {
         <div className="d-flex flex-wrap align-items-center gap-2">
           <Link to="/admin" className="btn-outline-brand btn-xs">Admin</Link>
           <Link to="/admin/auditoria" className="btn-outline-brand btn-xs">Auditoría</Link>
-          <Link to="/admin/facturas" className="btn-outline-brand btn-xs">Facturas</Link>
+          <Link to="/admin/facturas" className="btn-outline-brand btn-xs">Resumen</Link>
           <Link to="/login" className="btn-outline-brand btn-xs">Login</Link>
         </div>
       </div>

@@ -23,7 +23,7 @@ export default function AdminFacturas() {
   const [idEmpleado, setIdEmpleado] = useState("");
 
   const [facturas, setFacturas] = useState([]);
-  const [msgFacturas, setMsgFacturas] = useState("Cargando facturas...");
+  const [msgFacturas, setMsgFacturas] = useState("Cargando Ventas...");
 
   // Loading simple
   const [cargando, setCargando] = useState(true);
@@ -63,7 +63,7 @@ export default function AdminFacturas() {
 
   async function cargarFacturas(fIni = fechaDesde, fFin = fechaHasta, emp = idEmpleado) {
     try {
-      setMsgFacturas("Cargando facturas...");
+      setMsgFacturas("Cargando Ventas...");
       setCargando(true);
 
       let url = `${import.meta.env.VITE_API_URL}/api/facturas`;
@@ -77,17 +77,17 @@ export default function AdminFacturas() {
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
-      if (!res.ok) throw new Error("Error cargando facturas");
+      if (!res.ok) throw new Error("Error cargando resumen");
       const data = await res.json();
       const lista = Array.isArray(data) ? data : [];
       setFacturas(lista);
       setMsgFacturas(
-        lista.length ? `Mostrando ${lista.length} facturas` : "Sin facturas registradas."
+        lista.length ? `Mostrando ${lista.length} ventas` : "Sin ventas registradas."
       );
     } catch (e) {
-      console.error("Error cargando facturas:", e);
+      console.error("Error cargando ventas:", e);
       setFacturas([]);
-      setMsgFacturas("Error cargando facturas.");
+      setMsgFacturas("Error cargando ventas.");
     } finally {
       setCargando(false);
     }
@@ -104,7 +104,7 @@ export default function AdminFacturas() {
       setShowModal(true);
     } catch (e) {
       console.error("Error cargando detalle:", e);
-      alert("Error al cargar el detalle de la factura");
+      alert("Error al cargar el detalle de la venta");
     }
   }
 
@@ -144,7 +144,7 @@ export default function AdminFacturas() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `facturas_${fechaDesde}_a_${fechaHasta}${idEmpleado ? `_emp-${idEmpleado}` : ""}.csv`;
+    a.download = `ventas_${fechaDesde}_a_${fechaHasta}${idEmpleado ? `_emp-${idEmpleado}` : ""}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -171,7 +171,7 @@ export default function AdminFacturas() {
             <Link className="btn btn-sm btn-outline-brand" to="/pedido">Caja / Pedido</Link>
             <Link className="btn btn-sm btn-outline-brand" to="/admin">Productos</Link>
             <Link className="btn btn-sm btn-outline-brand" to="/admin/auditoria">Auditoría</Link>
-            <Link className="btn btn-sm btn-brand" to="/admin/facturas">Facturas</Link>
+            <Link className="btn btn-sm btn-brand" to="/admin/facturas">Resumen</Link>
             <Link className="btn btn-sm btn-outline-brand" to="/admin/inventario">Inventario</Link>
             <button onClick={logout} className="btn btn-sm btn-outline-secondary">Cerrar sesión</button>
           </div>
@@ -182,8 +182,8 @@ export default function AdminFacturas() {
         {/* Encabezado */}
         <section className="hero mb-4 text-center">
           <div className="hero-content">
-            <h1 className="display-6 fw-bold mb-2">Gestión de Facturas</h1>
-            <p className="lead mb-0">Consulta y gestiona todas las facturas del sistema.</p>
+            <h1 className="display-6 fw-bold mb-2">Resumen de Ventas</h1>
+            <p className="lead mb-0">Consulta y gestiona todas las ventas del sistema.</p>
           </div>
         </section>
 
@@ -193,7 +193,7 @@ export default function AdminFacturas() {
             <div className="col-12 col-md-3">
               <div className="card card-soft h-100">
                 <div className="card-body text-center">
-                  <div className="text-muted">Total facturas</div>
+                  <div className="text-muted">Total Ventas</div>
                   <div className="h4 fw-bold text-gradient mt-1">{kpis.totalFacturas}</div>
                   <small className="text-muted">Rango seleccionado</small>
                 </div>
@@ -223,7 +223,7 @@ export default function AdminFacturas() {
             <div className="col-12 col-md-3">
               <div className="card card-soft h-100">
                 <div className="card-body text-center">
-                  <div className="text-muted">Promedio por factura</div>
+                  <div className="text-muted">Promedio por venta</div>
                   <div className="h4 fw-bold text-gradient mt-1">{money(kpis.promedioFactura)}</div>
                   <small className="text-muted">Ticket medio</small>
                 </div>
@@ -284,7 +284,7 @@ export default function AdminFacturas() {
           <div className="card-body">
             <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
               <div className="d-flex align-items-center gap-2">
-                <h5 className="mb-0">Facturas registradas</h5>
+                <h5 className="mb-0">Resumen de ventas</h5>
                 <span className="badge bg-info">{facturas.length}</span>
               </div>
               <div className="d-flex gap-2">
@@ -318,7 +318,7 @@ export default function AdminFacturas() {
                   ) : facturas.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="text-center text-muted py-5">
-                        😶‍🌫️ No hay facturas registradas en el rango seleccionado
+                        😶‍🌫️ No hay ventas registradas en el rango seleccionado
                       </td>
                     </tr>
                   ) : (
@@ -361,7 +361,7 @@ export default function AdminFacturas() {
               <div className="modal-content shadow-lg border-0">
                 <div className="modal-header" style={{ background: "linear-gradient(135deg, var(--sky), var(--aqua))", color: "#000" }}>
                   <h5 className="modal-title">
-                    Factura #{detalle.factura?.id_factura}
+                    Venta #{detalle.factura?.id_factura}
                   </h5>
                   <button
                     type="button"
