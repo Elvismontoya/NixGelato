@@ -166,7 +166,7 @@ export default function AdminFacturas() {
       {/* Navbar */}
       <nav className="navbar navbar-expand-lg border-bottom sticky-top">
         <div className="container">
-          <Link className="navbar-brand fw-semibold" to="/">🍨 NixGelato</Link>
+          <Link className="navbar-brand fw-bold" to="/">🍨 NixGelato</Link>
           <div className="d-flex flex-wrap gap-2">
             <Link className="btn btn-sm btn-outline-brand" to="/pedido">Caja / Pedido</Link>
             <Link className="btn btn-sm btn-outline-brand" to="/admin">Productos</Link>
@@ -438,24 +438,40 @@ export default function AdminFacturas() {
       )}
 
       {/* FOOTER */}
-      <footer className="py-4 border-top mt-5">
+      <footer className="py-3 mt-3">
         <div className="container">
           <div className="row align-items-center">
-            <div className="col-md-4 text-center text-md-start mb-2 mb-md-0">
-              <Link to="/" className="text-decoration-none fw-bold text-gradient">
-                &copy; 2024 NixGelato
+            <div className="col-md-4 text-center text-md-start mb-3 mb-md-0">
+              <Link
+                to="/"
+                className="text-decoration-none fw-bold text-gradient d-flex align-items-center"
+              >
+                <span className="display-6 me-2">🍨</span>
+                <span>&copy; 2024 NixGelato</span>
               </Link>
             </div>
-            <div className="col-md-4 text-center mb-2 mb-md-0">
-              <p className="mb-0 text-muted">Desarrollado por Elvis Montoya y Juan Hernandez</p>
+            <div className="col-md-4 text-center mb-3 mb-md-0">
+              <p className="mb-0 text-muted">
+                Desarrollado por Elvis Montoya y Juan Hernandez
+              </p>
             </div>
             <div className="col-md-4 text-center text-md-end">
               <div className="d-flex justify-content-center justify-content-md-end gap-4">
-                <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" className="text-decoration-none text-muted hover-lift">
-                  Instagram
+                <a
+                  href="https://www.instagram.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-decoration-none text-muted hover-lift d-flex align-items-center"
+                >
+                  <span className="me-1">📷</span> Instagram
                 </a>
-                <a href="https://www.facebook.com/" target="_blank" rel="noreferrer" className="text-decoration-none text-muted hover-lift">
-                  Facebook
+                <a
+                  href="https://www.facebook.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-decoration-none text-muted hover-lift d-flex align-items-center"
+                >
+                  <span className="me-1">👥</span> Facebook
                 </a>
               </div>
             </div>

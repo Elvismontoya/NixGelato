@@ -21,12 +21,9 @@ export default function Home() {
   return (
     <>
       {/* Navbar mejorada */}
-      <nav className="navbar navbar-expand-lg border-bottom sticky-top bg-white shadow-sm">
+      <nav className="navbar navbar-expand-lg border-bottom sticky-top">
         <div className="container">
-          <Link className="navbar-brand fw-bold d-flex align-items-center" to="/">
-            <span className="display-6 me-2">🍨</span>
-            <span className="text-gradient fw-bold">NixGelato</span>
-          </Link>
+          <Link className="navbar-brand fw-bold" to="/">🍨 NixGelato</Link>
           <Link className="btn btn-brand btn-sm px-3 py-2 fw-semibold shadow-sm" to="/login">
             Iniciar sesión
           </Link>
@@ -302,7 +299,7 @@ export default function Home() {
       </main>
 
       {/* FOOTER mejorado */}
-      <footer className="py-5 border-top bg-light mt-5">
+      <footer className="py-3 mt-3">
         <div className="container">
           <div className="row align-items-center">
             <div className="col-md-4 text-center text-md-start mb-3 mb-md-0">
