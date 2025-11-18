@@ -269,8 +269,10 @@ router.delete('/:id', verifyToken, requireAdmin, async (req, res) => {
           accion: 'DELETE',
           tabla_afectada: 'productos',
           id_registro_afectado: id,
+          id_producto: Number(id),
           descripcion: `Producto eliminado definitivamente: ${producto.nombre_producto}`
         }])
+
     } catch (auditError) {
       console.error('Error registrando auditoría:', auditError)
     }

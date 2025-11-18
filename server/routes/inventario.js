@@ -40,7 +40,7 @@ router.get('/', verifyToken, async (_req, res) => {
       ultima_actualizacion: item.ultima_actualizacion,
       estado:
         item.stock_actual <= 0 ? 'agotado' :
-        item.stock_actual <= item.stock_minimo ? 'bajo' : 'normal'
+          item.stock_actual <= item.stock_minimo ? 'bajo' : 'normal'
     }))
 
     res.json(inventarioFormateado)
@@ -84,8 +84,10 @@ router.put('/:id', verifyToken, requireAdmin, async (req, res) => {
           accion: 'UPDATE',
           tabla_afectada: 'inventario',
           id_registro_afectado: id,
+          id_producto: Number(id), // FK real al producto
           descripcion: `Stock actualizado: ${data.productos.nombre_producto} - Nuevo stock: ${stock_actual}`
         }])
+
     } catch (auditError) {
       console.error('Error registrando auditoría:', auditError)
     }

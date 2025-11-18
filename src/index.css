@@ -430,3 +430,15 @@ footer a:hover::after {
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(var(--sky-dark), var(--aqua-dark));
 }
+
+/* Botones compactos de acciones en tablas */
+.btn-table-action {
+  border-radius: 999px;
+  padding: 0.20rem 0.75rem;   /* más pequeño */
+  font-size: 0.95rem;         /* más pequeño */
+  line-height: 1.1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}

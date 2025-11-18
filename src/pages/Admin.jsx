@@ -420,25 +420,25 @@ export default function Admin() {
         </section>
 
         <div className="mb-4 row g-3 justify-content-center stagger-children">
-              <div className="col-12 col-md-4">
-                <div className="card-soft text-center p-3">
-                  <div className="text-muted">Productos</div>
-                  <div className="h3 fw-bold text-gradient mt-1">{totalProductos}</div>
-                </div>
-              </div>
-              <div className="col-12 col-md-4">
-                <div className="card-soft text-center p-3">
-                  <div className="text-muted">Categorías</div>
-                  <div className="h3 fw-bold text-gradient mt-1">{totalCategorias}</div>
-                </div>
-              </div>
-              <div className="col-12 col-md-4">
-                <div className="card-soft text-center p-3">
-                  <div className="text-muted">Bajo stock (≤10)</div>
-                  <div className="h3 fw-bold text-gradient mt-1">{bajoStock}</div>
-                </div>
-              </div>
+          <div className="col-12 col-md-4">
+            <div className="card-soft text-center p-3">
+              <div className="text-muted">Productos</div>
+              <div className="h3 fw-bold text-gradient mt-1">{totalProductos}</div>
             </div>
+          </div>
+          <div className="col-12 col-md-4">
+            <div className="card-soft text-center p-3">
+              <div className="text-muted">Categorías</div>
+              <div className="h3 fw-bold text-gradient mt-1">{totalCategorias}</div>
+            </div>
+          </div>
+          <div className="col-12 col-md-4">
+            <div className="card-soft text-center p-3">
+              <div className="text-muted">Bajo stock (≤10)</div>
+              <div className="h3 fw-bold text-gradient mt-1">{bajoStock}</div>
+            </div>
+          </div>
+        </div>
 
         {/* Tabs */}
         <div className="card card-soft mb-4">
@@ -760,18 +760,22 @@ export default function Admin() {
                                 )}
                               </td>
                               <td className="text-end">
-                                <button
-                                  className="btn btn-sm btn-outline-brand me-2"
-                                  onClick={() => startEditarProducto(p)}
-                                >
-                                  Editar
-                                </button>
-                                <button
-                                  className="btn btn-sm btn-outline-danger"
-                                  onClick={() => eliminarProducto(p.id)}
-                                >
-                                  Eliminar
-                                </button>
+                                <div className="d-flex justify-content-end gap-2 flex-nowrap">
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-brand btn-table-action"
+                                    onClick={() => startEditarProducto(p)}
+                                  >
+                                    Editar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-danger btn-table-action"
+                                    onClick={() => eliminarProducto(p.id)}
+                                  >
+                                    Eliminar
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))
@@ -904,18 +908,22 @@ export default function Admin() {
                                 </span>
                               </td>
                               <td className="text-end">
-                                <button
-                                  className="btn btn-sm btn-outline-brand me-2"
-                                  onClick={() => startEditarCategoria(cat)}
-                                >
-                                  Editar
-                                </button>
-                                <button
-                                  className="btn btn-sm btn-outline-danger"
-                                  onClick={() => eliminarCategoria(cat.id_categoria)}
-                                >
-                                  Eliminar
-                                </button>
+                                <div className="d-flex justify-content-end gap-2 flex-nowrap">
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-brand btn-table-action"
+                                    onClick={() => startEditarCategoria(cat)}
+                                  >
+                                    Editar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-danger btn-table-action"
+                                    onClick={() => eliminarCategoria(cat.id_categoria)}
+                                  >
+                                    Eliminar
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))

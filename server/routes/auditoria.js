@@ -10,11 +10,13 @@ router.get("/", verifyToken, requireAdmin, async (req, res) => {
     const { data, error } = await supabaseAdmin
       .from("auditoria")
       .select(`
-        *,
-        empleados:empleados(id_empleado, nombres, apellidos)
-      `)
+    *,
+    empleados:empleados(id_empleado, nombres, apellidos),
+    productos:productos(id_producto, nombre_producto)
+  `)
       .order("fecha_hora", { ascending: false })
       .limit(100);
+
 
     if (error) {
       console.error("Error consultando auditoría:", error);
@@ -31,8 +33,11 @@ router.get("/", verifyToken, requireAdmin, async (req, res) => {
       accion: item.accion,
       tabla_afectada: item.tabla_afectada,
       id_registro_afectado: item.id_registro_afectado,
-      descripcion: item.descripcion
+      descripcion: item.descripcion,
+      producto: item.productos ? item.productos.nombre_producto : null,
+      id_producto: item.id_producto ?? null,
     }));
+
 
     res.json(auditoriaFormateada);
   } catch (err) {
@@ -72,10 +77,19 @@ router.post("/", async (req, res) => {
   }
 });
 
+
 // GET /api/auditoria/ingresos-hoy
 router.get("/ingresos-hoy", verifyToken, requireAdmin, async (req, res) => {
   try {
-    const hoy = new Date().toISOString().split("T")[0];
+    // Obtener "hoy" en zona horaria de Colombia
+    const ahora = new Date();
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Bogota",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+    const hoy = formatter.format(ahora); // ej: "2025-11-18"
 
     const { data, error } = await supabaseAdmin
       .from("facturas")
@@ -100,12 +114,13 @@ router.get("/ingresos-hoy", verifyToken, requireAdmin, async (req, res) => {
       ingresos_totales: ingresosHoy,
       total_ventas: totalVentas,
       promedio_venta: totalVentas > 0 ? ingresosHoy / totalVentas : 0,
-      facturas: data
+      facturas: data,
     });
   } catch (err) {
     console.error("Error en /api/auditoria/ingresos-hoy:", err);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 });
+
 
 export default router;
