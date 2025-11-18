@@ -27,9 +27,4 @@ BCRYPT_SALT_ROUNDS=10
 ##############################################
 
 # Dominio del frontend en producción (ej: https://tu-app.vercel.app)
-# Si no se usa, CORS permitirá todo en desarrollo
 FRONTEND_ORIGIN=
-
-##############################################
-# ⚠️ OPCIONAL (SOLO si usas un ORM o conexión directa)
-##############################################
