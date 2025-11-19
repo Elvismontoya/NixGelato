@@ -33,7 +33,7 @@ export default function Home() {
       {/* Main */}
       <main className="container my-5">
         {/* HERO mejorado */}
-        <section className="hero row align-items-center g-5 mb-5 py-4">
+        <section className="hero row align-items-center g-5 mb-5 py-4 mt-2">
           <div className="col-lg-6 text-center text-lg-start">
             <span className="badge bg-primary bg-opacity-10 text-primary mb-3 px-3 py-2 rounded-pill fw-normal">
               ✨ Versión demo para heladerías modernas

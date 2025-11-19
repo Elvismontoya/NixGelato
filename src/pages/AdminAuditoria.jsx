@@ -381,7 +381,6 @@ export default function AdminAuditoria() {
                   "Empleado",
                   "Acción",
                   "Tabla",
-                  "Producto",
                   "Descripción",
                 ]}
               />
