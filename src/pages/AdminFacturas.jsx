@@ -34,11 +34,11 @@ export default function AdminFacturas() {
 
   // ===== Auth =====
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const rol = localStorage.getItem("rol");
-    if (!token) { navigate("/login", { replace: true }); return; }
-    if (rol !== "admin") { navigate("/pedido", { replace: true }); return; }
-  }, [navigate]);
+  const token = localStorage.getItem("token");
+  const rol = localStorage.getItem("rol");
+  if (!token) { navigate("/login", { replace: true }); return; }
+  if (rol !== "admin" && rol !== "cajero") { navigate("/facturas", { replace: true }); return; }
+}, [navigate]);
 
   function logout() {
     localStorage.removeItem("token");
@@ -171,7 +171,7 @@ export default function AdminFacturas() {
             <Link className="btn btn-sm btn-outline-brand" to="/pedido">Caja / Pedido</Link>
             <Link className="btn btn-sm btn-outline-brand" to="/admin">Productos</Link>
             <Link className="btn btn-sm btn-outline-brand" to="/admin/auditoria">Auditoría</Link>
-            <Link className="btn btn-sm btn-brand" to="/admin/facturas">Resumen</Link>
+            <Link className="btn btn-sm btn-brand" to="/facturas">Resumen</Link>
             <Link className="btn btn-sm btn-outline-brand" to="/admin/inventario">Inventario</Link>
             <button onClick={logout} className="btn btn-sm btn-outline-secondary">Cerrar sesión</button>
           </div>

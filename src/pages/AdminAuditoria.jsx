@@ -474,7 +474,7 @@ function Navbar({ logout }) {
           <Link className="btn btn-sm btn-brand" to="/admin/auditoria">
             Auditoría
           </Link>
-          <Link className="btn btn-sm btn-outline-brand" to="/admin/facturas">
+          <Link className="btn btn-sm btn-outline-brand" to="/facturas">
             Resumen
           </Link>
           <Link

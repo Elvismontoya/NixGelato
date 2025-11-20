@@ -21,7 +21,7 @@ export default function App() {
         <Route path="/pedido" element={<Pedido />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/auditoria" element={<AdminAuditoria />} />
-        <Route path="/admin/facturas" element={<AdminFacturas />} />
+        <Route path="/facturas" element={<AdminFacturas />} />
         <Route path="/admin/inventario" element={<Inventario />} />
 
         {/* Fallback */}
