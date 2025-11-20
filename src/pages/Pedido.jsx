@@ -62,6 +62,12 @@ export default function Pedido() {
     if (!t) navigate("/login", { replace: true });
   }, [navigate]);
 
+  function logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("rol");
+      navigate("/login", { replace: true });
+    }
+
   // =========================
   // Cargar datos
   // =========================
@@ -293,7 +299,7 @@ export default function Pedido() {
             </Link>
             <button
               className="btn btn-sm btn-outline-secondary"
-              onClick={() => navigate("/login")}
+              onClick={logout}
             >
               Cerrar Sesión
             </button>
