@@ -295,7 +295,7 @@ export default function Pedido() {
               <span className="badge bg-brand">{money(total)}</span>
             </div>
             <Link className="btn btn-sm btn-outline-brand" to="/facturas">
-              Resumen
+              Panel ADMIN
             </Link>
             <button
               className="btn btn-sm btn-outline-secondary"
