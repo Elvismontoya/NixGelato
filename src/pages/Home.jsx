@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 
 export default function Home() {
   const [currentMetric, setCurrentMetric] = useState(0);
-  
+
   // Rotación de métricas destacadas
   useEffect(() => {
     const interval = setInterval(() => {
@@ -142,7 +142,7 @@ export default function Home() {
           <div className="row g-4">
             <div className="col-md-4">
               <div className="card card-soft h-100 text-center p-4 border-0 shadow-sm hover-lift">
-                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '70px', height: '70px'}}>
+                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '70px', height: '70px' }}>
                   <div className="fs-2">⚡</div>
                 </div>
                 <h5 className="mb-3 fw-bold">Pedidos rápidos</h5>
@@ -155,7 +155,7 @@ export default function Home() {
 
             <div className="col-md-4">
               <div className="card card-soft h-100 text-center p-4 border-0 shadow-sm hover-lift">
-                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '70px', height: '70px'}}>
+                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '70px', height: '70px' }}>
                   <div className="fs-2">📊</div>
                 </div>
                 <h5 className="mb-3 fw-bold">Todo bajo control</h5>
@@ -168,7 +168,7 @@ export default function Home() {
 
             <div className="col-md-4">
               <div className="card card-soft h-100 text-center p-4 border-0 shadow-sm hover-lift">
-                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{width: '70px', height: '70px'}}>
+                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '70px', height: '70px' }}>
                   <div className="fs-2">🧩</div>
                 </div>
                 <h5 className="mb-3 fw-bold">Flexible y modular</h5>
@@ -187,6 +187,8 @@ export default function Home() {
             ¿Cómo funciona NixGelato?
           </h2>
           <div className="row g-4">
+
+            {/* Paso 1 */}
             <div className="col-md-4">
               <div className="card card-soft h-100 border-0 shadow-sm hover-lift position-relative">
                 <div className="position-absolute top-0 start-0 mt-3 ms-3">
@@ -201,6 +203,7 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Paso 2 */}
             <div className="col-md-4">
               <div className="card card-soft h-100 border-0 shadow-sm hover-lift position-relative">
                 <div className="position-absolute top-0 start-0 mt-3 ms-3">
@@ -215,6 +218,7 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Paso 3 */}
             <div className="col-md-4">
               <div className="card card-soft h-100 border-0 shadow-sm hover-lift position-relative">
                 <div className="position-absolute top-0 start-0 mt-3 ms-3">
@@ -228,16 +232,19 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
           </div>
         </section>
 
-        {/* HIGHLIGHTS / MÉTRICAS mejorado */}
+        {/* BENEFICIOS con ícono */}
         <section className="mb-5">
           <div className="card card-soft border-0 shadow-sm overflow-hidden">
             <div className="card-body p-4 p-md-5">
               <div className="row align-items-center">
                 <div className="col-md-8 text-center text-md-start">
-                  <h5 className="fw-bold mb-2">Pensado para heladerías reales</h5>
+                  <h5 className="fw-bold mb-2">
+                    <span className="me-2">🍦</span> Pensado para heladerías reales
+                  </h5>
                   <p className="mb-0 text-muted">
                     Ideal para proyectos académicos, pruebas con clientes o la
                     primera versión de tu sistema de punto de venta.
@@ -258,15 +265,18 @@ export default function Home() {
           </div>
         </section>
 
-        {/* NUEVA SECCIÓN: Testimonios */}
+        {/* TESTIMONIOS mejorados */}
         <section className="mb-5">
           <h2 className="h3 fw-bold text-center mb-5">Lo que dicen nuestros usuarios</h2>
           <div className="row g-4">
+
             <div className="col-md-6">
               <div className="card card-soft border-0 shadow-sm p-4">
                 <div className="d-flex align-items-center mb-3">
-                  <div className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-3" style={{width: '50px', height: '50px'}}>
-                    <span className="text-primary fw-bold">A</span>
+                  <div className="rounded-circle bg-primary bg-opacity-10 d-flex 
+            align-items-center justify-content-center me-3"
+                    style={{ width: "50px", height: "50px" }}>
+                    <span className="fs-4">👩‍🍳</span>
                   </div>
                   <div>
                     <h6 className="mb-0 fw-bold">Ana Rodríguez</h6>
@@ -274,15 +284,19 @@ export default function Home() {
                   </div>
                 </div>
                 <p className="mb-0">
-                  "NixGelato ha simplificado nuestro proceso de ventas. Ahora atendemos a más clientes en menos tiempo y con menos errores."
+                  "NixGelato ha simplificado nuestro proceso de ventas. Ahora atendemos
+                  a más clientes en menos tiempo y con menos errores."
                 </p>
               </div>
             </div>
+
             <div className="col-md-6">
               <div className="card card-soft border-0 shadow-sm p-4">
                 <div className="d-flex align-items-center mb-3">
-                  <div className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-3" style={{width: '50px', height: '50px'}}>
-                    <span className="text-primary fw-bold">C</span>
+                  <div className="rounded-circle bg-primary bg-opacity-10 d-flex 
+            align-items-center justify-content-center me-3"
+                    style={{ width: "50px", height: "50px" }}>
+                    <span className="fs-4">🧁</span>
                   </div>
                   <div>
                     <h6 className="mb-0 fw-bold">Carlos Méndez</h6>
@@ -290,10 +304,12 @@ export default function Home() {
                   </div>
                 </div>
                 <p className="mb-0">
-                  "La interfaz es tan intuitiva que nuestro personal aprendió a usarla en minutos. ¡Increíble para la temporada alta!"
+                  "La interfaz es tan intuitiva que nuestro personal aprendió a usarla
+                  en minutos. ¡Increíble para la temporada alta!"
                 </p>
               </div>
             </div>
+
           </div>
         </section>
       </main>
