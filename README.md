@@ -2,6 +2,8 @@
 # 🔐 CONFIGURACIÓN DE SUPABASE (BACKEND)
 ##############################################
 
+ENLACE DE LA PAGINA https://nixgelato.vercel.app/
+
 # URL del proyecto Supabase
 SUPABASE_URL=
 
@@ -27,4 +29,4 @@ BCRYPT_SALT_ROUNDS=10
 ##############################################
 
 # Dominio del frontend en producción (ej: https://tu-app.vercel.app)
-FRONTEND_ORIGIN=
+FRONTEND_ORIGIN=https://nixgelato.vercel.app/
