@@ -1,112 +1,123 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import ModalConfirmar from "../components/ModalConfirmar.jsx";
+import Ticket from "../components/Ticket.jsx";
 
 const money = (n) =>
   Number(n || 0).toLocaleString("es-CO", { style: "currency", currency: "COP" });
 
 const getToken = () => localStorage.getItem("token") || "";
 
-// Helpers para soportar distintos nombres de campos según el backend
-const getProductoId = (p) => p.id ?? p.id_producto;
-const getProductoNombre = (p) => p.nombre ?? p.nombre_producto;
-const getProductoPrecio = (p) => p.precio ?? p.precio_venta_unitario ?? 0;
+const getProductoId    = (p) => p.id ?? p.id_producto;
+const getProductoNombre= (p) => p.nombre ?? p.nombre_producto;
+const getProductoPrecio= (p) => Number(p.precio ?? p.precio_venta_unitario ?? 0);
 const getProductoStock = (p) => p.stock ?? p.stock_actual ?? 0;
 const getProductoPermiteToppings = (p) => p.permiteToppings ?? p.permite_toppings ?? false;
-
 const getToppingNombre = (t) => t.nombre ?? t.nombre_topping;
-const getToppingPrecioExtra = (t) =>
-  t.precio_adicional ?? t.precio ?? 0;
+const getToppingPrecio = (t) => Number(t.precio_adicional ?? t.precio ?? 0);
+
+// Billetes comunes en Colombia
+const BILLETES = [1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000];
 
 export default function Pedido() {
   const navigate = useNavigate();
 
-  // =========================
-  // Estados principales
-  // =========================
-  const [categorias, setCategorias] = useState([]);
-  const [toppings, setToppings] = useState([]);
-  const [pedido, setPedido] = useState([]);
-  const [descuento, setDescuento] = useState(0);
-  const [cliente, setCliente] = useState("");
-  const [pago, setPago] = useState(0);
-  const [metodoPago, setMetodoPago] = useState("");
-  const [metodosPago, setMetodosPago] = useState([]);
-  const [navbarFixed, setNavbarFixed] = useState(false);
+  const [categorias,    setCategorias]    = useState([]);
+  const [toppings,      setToppings]      = useState([]);
+  const [pedido,        setPedido]        = useState([]);
+  const [cliente,       setCliente]       = useState("");
+  const [pago,          setPago]          = useState(0);
+  const [metodoPago,    setMetodoPago]    = useState("");
+  const [metodosPago,   setMetodosPago]   = useState([]);
+  const [navbarFixed,   setNavbarFixed]   = useState(false);
+  const [cargando,      setCargando]      = useState(true);
+  const [cobrandoLoad,  setCobrandoLoad]  = useState(false);
 
-  // Flujo
-  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-  const [toppingsSeleccionados, setToppingsSeleccionados] = useState([]);
-  const [cargando, setCargando] = useState(true);
+  // Flujo de selección
+  const [productoSeleccionado,   setProductoSeleccionado]   = useState(null);
+  const [toppingsSeleccionados,  setToppingsSeleccionados]  = useState([]);
 
-  // =========================
-  // Efecto para navbar fijo al hacer scroll
-  // =========================
+  // Buscador
+  const [busqueda, setBusqueda] = useState("");
+
+  // Modales
+  const [modalVaciar,  setModalVaciar]   = useState(false);
+  const [modalExito,   setModalExito]    = useState(null); // { id_factura, total }
+  const [ventaParaTicket, setVentaParaTicket] = useState(null); // datos congelados para el ticket
+
+  // ── Navbar fijo ────────────────────────────────────────────
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setNavbarFixed(true);
-      } else {
-        setNavbarFixed(false);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setNavbarFixed(window.scrollY > 50);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // =========================
-  // Auth
-  // =========================
+  // ── Auth ───────────────────────────────────────────────────
   useEffect(() => {
-    const t = getToken();
-    if (!t) navigate("/login", { replace: true });
+    if (!getToken()) navigate("/login", { replace: true });
   }, [navigate]);
 
-  function logout() {
-      localStorage.removeItem("token");
-      localStorage.removeItem("rol");
-      navigate("/login", { replace: true });
-    }
+  // Obtener nombre del empleado actual para el ticket (siempre actualizado)
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.nombres) {
+          localStorage.setItem("nombreEmpleado", `${data.nombres} ${data.apellidos || ""}`.trim());
+        } else {
+          localStorage.removeItem("nombreEmpleado");
+        }
+      })
+      .catch(() => {});
+  }, []);
 
-  // =========================
-  // Cargar datos
-  // =========================
+  function logout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("rol");
+    localStorage.removeItem("nombreEmpleado");
+    navigate("/login", { replace: true });
+  }
+
+  // ── Cargar datos ───────────────────────────────────────────
   async function cargarDatos() {
     setCargando(true);
     try {
-      const [resProductos, resToppings] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/api/productos`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        }),
-        fetch(`${import.meta.env.VITE_API_URL}/api/toppings`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        }),
+      const [resP, resT] = await Promise.all([
+        fetch(`${import.meta.env.VITE_API_URL}/api/productos`,
+          { headers: { Authorization: `Bearer ${getToken()}` } }),
+        fetch(`${import.meta.env.VITE_API_URL}/api/toppings`,
+          { headers: { Authorization: `Bearer ${getToken()}` } }),
       ]);
-
-      if (!resProductos.ok || !resToppings.ok) {
-        throw new Error("Error cargando datos");
-      }
-
-      const dataProductos = await resProductos.json();
-      const dataToppings = await resToppings.json();
-
-      setCategorias(Array.isArray(dataProductos) ? dataProductos : []);
-      setToppings(Array.isArray(dataToppings) ? dataToppings : []);
-    } catch (error) {
-      console.error("Error cargando datos:", error);
-      alert("Error cargando los datos del sistema");
+      if (!resP.ok || !resT.ok) throw new Error("Error cargando datos");
+      setCategorias(await resP.json());
+      setToppings(await resT.json());
+    } catch (e) {
+      console.error(e);
     } finally {
       setCargando(false);
     }
   }
 
-  function cargarMetodosPago() {
-    const fake = [
-      { id: 1, nombre_metodo: "Efectivo", description: "Pago en caja", activo: true },
-      { id: 2, nombre_metodo: "Transferencia", description: "Nequi/Daviplata", activo: true },
-      { id: 3, nombre_metodo: "Tarjeta", description: "Pago con tarjeta", activo: true },
-    ];
-    setMetodosPago(fake.filter((m) => m.activo));
+  async function cargarMetodosPago() {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/facturas/metodos-pago`,
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setMetodosPago(Array.isArray(data)
+          ? data.map((m) => ({ id: m.id_metodo, nombre_metodo: m.nombre_metodo }))
+          : []);
+      }
+    } catch {
+      setMetodosPago([
+        { id: 1, nombre_metodo: "Efectivo" },
+        { id: 2, nombre_metodo: "Transferencia" },
+      ]);
+    }
   }
 
   useEffect(() => {
@@ -114,122 +125,120 @@ export default function Pedido() {
     cargarMetodosPago();
   }, []);
 
-  // =========================
-  // Manejo de selección
-  // =========================
+  // ── Buscador ───────────────────────────────────────────────
+  const todosLosProductos = useMemo(() =>
+    categorias.flatMap((cat) =>
+      (cat.productos ?? []).map((p) => ({ ...p, _catNombre: cat.nombre }))
+    ), [categorias]);
+
+  const productosFiltrados = useMemo(() => {
+    const q = busqueda.toLowerCase().trim();
+    if (!q) return [];
+    return todosLosProductos.filter((p) =>
+      getProductoNombre(p).toLowerCase().includes(q)
+    );
+  }, [busqueda, todosLosProductos]);
+
+  // ── Selección de producto ──────────────────────────────────
   function seleccionarProducto(producto) {
-    const stock = getProductoStock(producto);
-    if (stock <= 0) {
-      alert("Este producto no tiene stock disponible");
+    if (getProductoStock(producto) <= 0) return;
+    setBusqueda("");
+
+    // Si NO tiene toppings → agregar directo al pedido sin pantalla intermedia
+    if (!getProductoPermiteToppings(producto)) {
+      agregarDirecto(producto);
       return;
     }
+    // Si tiene toppings → ir a pantalla de personalización
     setProductoSeleccionado(producto);
     setToppingsSeleccionados([]);
+  }
+
+  function agregarDirecto(producto) {
+    const precio = getProductoPrecio(producto);
+    setPedido((prev) => {
+      // Si ya existe el mismo producto sin toppings → aumentar cantidad
+      const idx = prev.findIndex(
+        (i) => getProductoId(i.producto) === getProductoId(producto) && i.toppings.length === 0
+      );
+      if (idx !== -1) {
+        return prev.map((i, index) =>
+          index === idx
+            ? { ...i, cantidad: i.cantidad + 1, subtotal: i.precioUnitario * (i.cantidad + 1) }
+            : i
+        );
+      }
+      return [...prev, {
+        id: `${getProductoId(producto)}-${Date.now()}`,
+        producto,
+        toppings: [],
+        cantidad: 1,
+        precioUnitario: precio,
+        subtotal: precio,
+      }];
+    });
   }
 
   function toggleTopping(topping) {
     setToppingsSeleccionados((prev) => {
       const existe = prev.find((t) => t.id_topping === topping.id_topping);
-      return existe ? prev.filter((t) => t.id_topping !== topping.id_topping) : [...prev, topping];
+      return existe
+        ? prev.filter((t) => t.id_topping !== topping.id_topping)
+        : [...prev, topping];
     });
   }
 
   const precioFinal = useMemo(() => {
     if (!productoSeleccionado) return 0;
-    const base = Number(getProductoPrecio(productoSeleccionado));
-    const extra = toppingsSeleccionados.reduce(
-      (s, t) => s + Number(getToppingPrecioExtra(t)),
-      0
+    return Math.round(
+      getProductoPrecio(productoSeleccionado) +
+      toppingsSeleccionados.reduce((s, t) => s + getToppingPrecio(t), 0)
     );
-    return Math.round(base + extra);
   }, [productoSeleccionado, toppingsSeleccionados]);
 
   function agregarAlPedido() {
-    if (!productoSeleccionado) {
-      alert("Selecciona un producto primero");
-      return;
-    }
-
-    const prodId = getProductoId(productoSeleccionado);
-    const prodNombre = getProductoNombre(productoSeleccionado);
-
-    const itemPedido = {
-      id: `${prodId}-${Date.now()}`,
+    if (!productoSeleccionado) return;
+    setPedido((prev) => [...prev, {
+      id: `${getProductoId(productoSeleccionado)}-${Date.now()}`,
       producto: productoSeleccionado,
-      tamano: "Único",
       toppings: [...toppingsSeleccionados],
       cantidad: 1,
       precioUnitario: precioFinal,
       subtotal: precioFinal,
-    };
-
-    setPedido((prev) => [...prev, itemPedido]);
-    resetSeleccion();
-  }
-
-  function resetSeleccion() {
+    }]);
     setProductoSeleccionado(null);
     setToppingsSeleccionados([]);
   }
 
-  // =========================
-  // Pedido existente
-  // =========================
+  // ── Pedido ─────────────────────────────────────────────────
   function quitarProducto(id) {
     setPedido((prev) => prev.filter((i) => i.id !== id));
   }
 
   function cambiarCantidad(id, val) {
-    const nuevaCantidad = Number(val);
-    if (nuevaCantidad < 1) return;
-
+    const n = Math.max(1, Number(val));
     setPedido((prev) =>
-      prev.map((i) => {
-        if (i.id === id) {
-          const nuevoSubtotal = i.precioUnitario * nuevaCantidad;
-          return { ...i, cantidad: nuevaCantidad, subtotal: nuevoSubtotal };
-        }
-        return i;
-      })
+      prev.map((i) => i.id === id ? { ...i, cantidad: n, subtotal: i.precioUnitario * n } : i)
     );
   }
 
-  function vaciarPedido() {
-    if (!pedido.length) return;
-    if (confirm("¿Estás seguro de que quieres vaciar el pedido?")) setPedido([]);
-  }
+  // ── Cálculos ───────────────────────────────────────────────
+  const subtotal              = pedido.reduce((s, i) => s + i.subtotal, 0);
+  const total                 = subtotal;
+  const cambio                = Math.max(pago - total, 0);
 
-  // =========================
-  // Cálculos
-  // =========================
-  const subtotal = pedido.reduce((sum, i) => sum + i.subtotal, 0);
-  const descuentoNormalizado = Math.max(0, Math.min(descuento, subtotal));
-  const total = Math.max(subtotal - descuentoNormalizado, 0);
-  const cambio = Math.max(pago - total, 0);
+  // Si el método es transferencia, sincronizar pago con total automáticamente
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (metodoPago && metodoPago !== "Efectivo") {
+      setPago(total);
+    }
+  }, [total, metodoPago]);
 
-  // =========================
-  // Cobrar
-  // =========================
+  // ── Cobrar ─────────────────────────────────────────────────
   async function cobrar() {
-    if (!pedido.length) return alert("No hay productos en el pedido.");
-    if (!metodoPago) return alert("Seleccione método de pago.");
-    if (pago < total) return alert("El pago es insuficiente.");
-
-    const payload = {
-      cliente,
-      subtotal,
-      descuento: descuentoNormalizado,
-      total,
-      metodo_pago: metodoPago,
-      productos: pedido.map((item) => ({
-        id: getProductoId(item.producto),
-        cantidad: item.cantidad,
-        precio: item.precioUnitario,
-        tamano: item.tamano,
-        toppings: item.toppings.map((t) => t.id_topping),
-      })),
-    };
-
+    if (!pedido.length || !metodoPago) return;
+    setCobrandoLoad(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/api/facturas`, {
         method: "POST",
@@ -237,44 +246,72 @@ export default function Pedido() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${getToken()}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          cliente,
+          subtotal,
+          total,
+          metodo_pago: metodoPago,
+          productos: pedido.map((item) => ({
+            id: getProductoId(item.producto),
+            cantidad: item.cantidad,
+            precio: item.precioUnitario,
+            toppings: item.toppings.map((t) => t.id_topping),
+          })),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Error al registrar");
+
+      // Congelar datos para el ticket (antes de vaciar el pedido)
+      const empleadoNombre = localStorage.getItem("nombreEmpleado") || "";
+      setVentaParaTicket({
+        id_factura: data.id_factura,
+        fecha: new Date().toLocaleString("es-CO"),
+        cliente,
+        empleado: empleadoNombre,
+        items: pedido.map((item) => ({
+          nombre: getProductoNombre(item.producto),
+          cantidad: item.cantidad,
+          subtotal: item.subtotal,
+          toppings: item.toppings.map(getToppingNombre),
+        })),
+        total,
+        metodoPago,
+        pago,
+        cambio,
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      // Mostrar modal de éxito
+      setModalExito({ id_factura: data.id_factura, total });
 
-      alert(`✅ Factura #${data.id_factura} registrada correctamente`);
-
-      // reset
+      // Reset
       setPedido([]);
       setCliente("");
       setPago(0);
-      setDescuento(0);
       setMetodoPago("");
+
+      // Refrescar stock
+      await cargarDatos();
     } catch (err) {
-      alert("❌ Error: " + err.message);
+      alert("❌ " + err.message);
+    } finally {
+      setCobrandoLoad(false);
     }
   }
 
-  // =========================
-  // UI
-  // =========================
+  // ── Loading ────────────────────────────────────────────────
   if (cargando) {
     return (
       <>
-        <nav className={`navbar navbar-expand-lg border-bottom ${navbarFixed ? 'fixed-nav' : ''}`}>
+        <nav className="navbar navbar-expand-lg border-bottom">
           <div className="container">
-            <Link className="navbar-brand fw-semibold" to="/">
-              🍨 NixGelato
-            </Link>
+            <span className="navbar-brand fw-bold">🍨 NixGelato</span>
           </div>
         </nav>
         <main className="container my-4">
           <div className="text-center py-5">
-            <div className="spinner-border text-brand" role="status">
-              <span className="visually-hidden">Cargando...</span>
-            </div>
-            <p className="mt-3">Cargando sistema de caja...</p>
+            <div className="spinner-border text-brand" role="status" />
+            <p className="mt-3 text-muted">Cargando sistema de caja...</p>
           </div>
         </main>
       </>
@@ -283,294 +320,203 @@ export default function Pedido() {
 
   return (
     <>
-      {/* NAV MEJORADO CON EFECTO FIXED */}
-      <nav className={`navbar navbar-expand-lg border-bottom ${navbarFixed ? 'fixed-nav' : ''}`}>
-        <div className="container">
-          <Link className="navbar-brand fw-bold" to="/">
-            🍨 NixGelato - Sistema de Caja
-          </Link>
-          <div className="d-flex gap-2 align-items-center">
-            <div className="d-none d-sm-flex gap-2 me-3">
-              <span className="badge bg-success">{pedido.length} items</span>
-              <span className="badge bg-brand">{money(total)}</span>
-            </div>
-            <Link className="btn btn-sm btn-outline-brand" to="/facturas">
-              Resumen
-            </Link>
-            <button
-              className="btn btn-sm btn-outline-secondary"
-              onClick={logout}
-            >
-              Cerrar Sesión
-            </button>
+      {/* NAVBAR */}
+      <nav className={`navbar navbar-expand-lg border-bottom ${navbarFixed ? "fixed-nav" : ""}`}>
+        <div className="container-fluid px-4">
+          <Link className="navbar-brand fw-bold" to="/">🍨 NixGelato</Link>
+          <div className="d-flex gap-2 align-items-center ms-auto">
+            <span className="badge bg-success d-none d-sm-inline">{pedido.length} items</span>
+            <span className="badge bg-brand d-none d-sm-inline">{money(total)}</span>
+            <Link className="btn btn-sm btn-outline-brand" to="/facturas">Ventas</Link>
+            <button className="btn btn-sm btn-outline-secondary" onClick={logout}>Salir</button>
           </div>
         </div>
       </nav>
+      {navbarFixed && <div style={{ height: 70 }} />}
 
-      {/* ESPACIO PARA EL NAVBAR FIXED */}
-      {navbarFixed && <div style={{ height: '70px' }}></div>}
-
-      <main className="container-fluid py-4">
+      <main className="container-fluid py-3 px-4">
         <div className="row g-4">
-          {/* PANEL PRINCIPAL - PRODUCTOS */}
+
+          {/* ── PANEL IZQUIERDO: Productos ── */}
           <div className="col-xl-8 col-lg-7">
-            <div className="card card-soft shadow-sm h-100">
-              <div className="card-header bg-white border-0 py-4">
-                <div className="row align-items-center">
-                  <div className="col">
-                    <h4 className="fw-bold mb-2 text-dark">
-                      {!productoSeleccionado ? "Menú de Productos" : "Personalizar Producto"}
-                    </h4>
-                    <p className="text-muted mb-0">
-                      {!productoSeleccionado 
-                        ? "Selecciona un producto para comenzar tu pedido" 
-                        : `Estás personalizando: ${getProductoNombre(productoSeleccionado)}`
-                      }
-                    </p>
-                  </div>
-                  <div className="col-auto">
-                    <div className="d-flex gap-3">
-                      <div className="text-center">
-                        <div className="fw-bold text-success fs-4">{pedido.length}</div>
-                        <small className="text-muted">Items</small>
-                      </div>
-                      <div className="text-center">
-                        <div className="fw-bold text-brand fs-4">{money(total)}</div>
-                        <small className="text-muted">Total</small>
+            <div className="card card-soft shadow-sm">
+              <div className="card-body p-4">
+
+                {/* Título + buscador */}
+                <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                  <h4 className="fw-bold mb-0">
+                    {productoSeleccionado ? `🎯 ${getProductoNombre(productoSeleccionado)}` : "🍦 Menú"}
+                  </h4>
+                  {!productoSeleccionado && (
+                    <div style={{ maxWidth: 320, width: "100%" }}>
+                      <div className="input-group">
+                        <span className="input-group-text">🔍</span>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="Buscar producto..."
+                          value={busqueda}
+                          onChange={(e) => setBusqueda(e.target.value)}
+                          autoComplete="off"
+                        />
+                        {busqueda && (
+                          <button className="btn btn-outline-secondary" onClick={() => setBusqueda("")}>✕</button>
+                        )}
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              </div>
 
-              <div className="card-body p-4">
-                {/* VISTA DE CATEGORÍAS Y PRODUCTOS */}
-                {!productoSeleccionado && (
-                  <div className="categories-container">
-                    {categorias.length === 0 ? (
-                      <div className="text-center py-5">
-                        <div className="empty-state">
-                          <div className="empty-state-icon">📦</div>
-                          <h5 className="mt-3">No hay productos disponibles</h5>
-                          <p className="text-muted">Contacta al administrador del sistema</p>
-                        </div>
-                      </div>
+                {/* Resultados del buscador */}
+                {busqueda && !productoSeleccionado && (
+                  <div className="mb-4">
+                    {productosFiltrados.length === 0 ? (
+                      <p className="text-muted text-center py-3">Sin resultados para "{busqueda}"</p>
                     ) : (
-                      categorias.map((categoria, index) => (
-                        <section key={categoria.id ?? categoria.id_categoria} className="category-section">
-                          <div className="category-header d-flex align-items-center justify-content-between mb-4">
-                            <div>
-                              <h5 className="fw-bold text-dark mb-1">{categoria.nombre}</h5>
-                              <span className="text-muted small">
-                                {categoria.productos?.length || 0} productos disponibles
-                              </span>
+                      <div className="row g-2">
+                        {productosFiltrados.map((p) => {
+                          const stock = getProductoStock(p);
+                          return (
+                            <div className="col-md-4 col-sm-6" key={getProductoId(p)}>
+                              <div
+                                className={`card h-100 border-0 shadow-sm ${stock <= 0 ? "opacity-50" : "hover-lift cursor-pointer"}`}
+                                onClick={() => stock > 0 && seleccionarProducto(p)}
+                              >
+                                <div className="card-body p-3 d-flex align-items-center gap-3">
+                                  <img
+                                    src={p.img || ""}
+                                    alt={getProductoNombre(p)}
+                                    style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }}
+                                    onError={(e) => { e.target.style.display = "none" }}
+                                  />
+                                  <div className="flex-grow-1 min-w-0">
+                                    <div className="fw-semibold small text-truncate">{getProductoNombre(p)}</div>
+                                    <div className="small text-muted">{p._catNombre}</div>
+                                    <div className="fw-bold text-success small">{money(getProductoPrecio(p))}</div>
+                                  </div>
+                                  <span className={`badge ${stock > 0 ? "bg-success" : "bg-danger"}`}>
+                                    {stock <= 0 ? "Agotado" : stock}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="category-badge">
-                              <span className="badge bg-light text-dark">{categoria.productos?.length || 0}</span>
-                            </div>
-                          </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                          <div className="row g-3">
-                            {categoria.productos?.map((producto) => {
-                              const prodId = getProductoId(producto);
-                              const prodNombre = getProductoNombre(producto);
-                              const precio = getProductoPrecio(producto);
-                              const stock = getProductoStock(producto);
-                              const permiteToppings = getProductoPermiteToppings(producto);
-                              
-                              return (
-                                <div className="col-xxl-3 col-lg-4 col-md-6" key={prodId}>
-                                  <div
-                                    className={`product-card card border-0 h-100 ${
-                                      stock <= 0 ? "opacity-50" : "hover-lift cursor-pointer"
-                                    }`}
-                                    onClick={() => seleccionarProducto(producto)}
-                                  >
-                                    <div className="product-image-container position-relative">
-                                      <img
-                                        src={producto.img || "/placeholder-image.jpg"}
-                                        alt={prodNombre}
-                                        className="product-image"
-                                        onError={(e) => {
-                                          e.target.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE2MCIgdmlld0JveD0iMCAwIDIwMCAxNjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTYwIiBmaWxsPSIjRjhGOUZBIi8+CjxwYXRoIGQ9Ik04MCA4MEw3MCA3MEg2MEw1MCA4MEw2MCA5MEg3MEw4MCA4MFoiIGZpbGw9IiNENkQ2RDYiLz4KPC9zdmc+";
-                                        }}
-                                      />
-                                      <div className="product-overlay">
-                                        {stock <= 0 ? (
-                                          <span className="badge bg-danger">Sin Stock</span>
-                                        ) : (
-                                          <span className="badge bg-success">Disponible</span>
-                                        )}
-                                      </div>
-                                      {permiteToppings && (
-                                        <div className="product-badge-top">
-                                          <span className="badge bg-info">+ Toppings</span>
-                                        </div>
-                                      )}
+                {/* Vista de categorías */}
+                {!productoSeleccionado && !busqueda && (
+                  <div>
+                    {categorias.map((cat, idx) => (
+                      <section key={cat.id ?? cat.id_categoria} className="mb-5">
+                        <div className="d-flex align-items-center gap-2 mb-3">
+                          <h5 className="fw-bold mb-0">{cat.nombre}</h5>
+                          <span className="badge bg-light text-dark border">{cat.productos?.length ?? 0}</span>
+                        </div>
+                        <div className="row g-3">
+                          {(cat.productos ?? []).map((p) => {
+                            const stock = getProductoStock(p);
+                            const sinStock = stock <= 0;
+                            return (
+                              <div className="col-xxl-3 col-lg-4 col-md-6" key={getProductoId(p)}>
+                                <div
+                                  className={`product-card card border-0 h-100 ${sinStock ? "opacity-50" : "hover-lift cursor-pointer"}`}
+                                  onClick={() => !sinStock && seleccionarProducto(p)}
+                                >
+                                  <div className="product-image-container position-relative">
+                                    <img
+                                      src={p.img || ""}
+                                      alt={getProductoNombre(p)}
+                                      className="product-image"
+                                      onError={(e) => {
+                                        e.target.parentElement.style.background = "#f8f9fa";
+                                        e.target.style.display = "none";
+                                      }}
+                                    />
+                                    <div className="product-overlay">
+                                      <span className={`badge ${sinStock ? "bg-danger" : "bg-success"}`}>
+                                        {sinStock ? "Agotado" : `Stock: ${stock}`}
+                                      </span>
                                     </div>
-                                    
-                                    <div className="card-body p-3">
-                                      <h6 className="product-title fw-semibold text-dark mb-2">
-                                        {prodNombre}
-                                      </h6>
-                                      
-                                      <div className="product-details">
-                                        <div className="d-flex justify-content-between align-items-center mb-2">
-                                          <span className="product-price fw-bold text-success">
-                                            {money(precio)}
-                                          </span>
-                                          <span className={`stock-badge badge ${
-                                            stock > 10 ? 'bg-success' : 
-                                            stock > 0 ? 'bg-warning' : 'bg-danger'
-                                          }`}>
-                                            Stock: {stock}
-                                          </span>
-                                        </div>
-                                        
-                                        <div className="product-features">
-                                          {permiteToppings && (
-                                            <span className="feature-tag">🎯 Personalizable</span>
-                                          )}
-                                        </div>
+                                    {getProductoPermiteToppings(p) && (
+                                      <div className="product-badge-top">
+                                        <span className="badge bg-info">+Toppings</span>
                                       </div>
+                                    )}
+                                  </div>
+                                  <div className="card-body p-3">
+                                    <h6 className="fw-semibold mb-1" style={{ fontSize: "0.88rem" }}>{getProductoNombre(p)}</h6>
+                                    <div className="fw-bold text-success">{money(getProductoPrecio(p))}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {idx < categorias.length - 1 && <hr className="my-4" />}
+                      </section>
+                    ))}
+                  </div>
+                )}
+
+                {/* Vista personalización (toppings) */}
+                {productoSeleccionado && (
+                  <div>
+                    <button className="btn btn-outline-secondary mb-4" onClick={() => { setProductoSeleccionado(null); setToppingsSeleccionados([]); }}>
+                      ← Volver al menú
+                    </button>
+
+                    <div className="row g-4">
+                      <div className="col-lg-8">
+                        <h6 className="fw-bold mb-3">🎯 Elige tus toppings</h6>
+                        {toppings.length === 0 ? (
+                          <p className="text-muted">No hay toppings disponibles.</p>
+                        ) : (
+                          <div className="row g-2">
+                            {toppings.map((t) => {
+                              const activo = !!toppingsSeleccionados.find((s) => s.id_topping === t.id_topping);
+                              return (
+                                <div className="col-md-4 col-6" key={t.id_topping}>
+                                  <div
+                                    className={`topping-card card text-center cursor-pointer ${activo ? "topping-active" : ""}`}
+                                    onClick={() => toggleTopping(t)}
+                                  >
+                                    <div className="card-body p-3">
+                                      <div style={{ fontSize: "1.5rem" }}>{activo ? "✅" : "➕"}</div>
+                                      <div className="fw-semibold small mt-1">{getToppingNombre(t)}</div>
+                                      <div className={`small fw-bold ${activo ? "text-white" : "text-brand"}`}>+{money(getToppingPrecio(t))}</div>
                                     </div>
                                   </div>
                                 </div>
                               );
                             })}
                           </div>
-                          
-                          {index < categorias.length - 1 && <hr className="my-5" />}
-                        </section>
-                      ))
-                    )}
-                  </div>
-                )}
-
-                {/* VISTA DE PERSONALIZACIÓN */}
-                {productoSeleccionado && (
-                  <div className="customization-view">
-                    <div className="navigation-header mb-4">
-                      <button
-                        className="btn btn-outline-secondary btn-lg"
-                        onClick={resetSeleccion}
-                      >
-                        ← Volver al Menú
-                      </button>
-                    </div>
-
-                    <div className="row">
-                      <div className="col-lg-8">
-                        {/* TOPPINGS */}
-                        {getProductoPermiteToppings(productoSeleccionado) && (
-                          <div className="toppings-section mb-5">
-                            <div className="section-header mb-4">
-                              <h5 className="fw-bold mb-2">🎯 Toppings Disponibles</h5>
-                              <p className="text-muted mb-0">Selecciona los toppings que deseas agregar</p>
-                            </div>
-                            
-                            <div className="row g-3">
-                              {toppings.length === 0 ? (
-                                <div className="col-12">
-                                  <div className="empty-toppings text-center py-4">
-                                    <div className="empty-state-icon">🍬</div>
-                                    <h6 className="mt-3">No hay toppings disponibles</h6>
-                                    <p className="text-muted small">Puedes continuar sin toppings</p>
-                                  </div>
-                                </div>
-                              ) : (
-                                toppings.map((topping) => {
-                                  const activo = !!toppingsSeleccionados.find(
-                                    (t) => t.id_topping === topping.id_topping
-                                  );
-                                  const nombreTop = getToppingNombre(topping);
-                                  const precioExtra = getToppingPrecioExtra(topping);
-                                  
-                                  return (
-                                    <div className="col-xl-4 col-md-6" key={topping.id_topping}>
-                                      <div
-                                        className={`topping-card card h-100 text-center ${
-                                          activo ? 'topping-active' : ''
-                                        }`}
-                                        onClick={() => toggleTopping(topping)}
-                                      >
-                                        <div className="card-body p-4">
-                                          <div className="topping-icon mb-3">
-                                            {activo ? '✅' : '➕'}
-                                          </div>
-                                          <h6 className="topping-name fw-semibold mb-2">
-                                            {nombreTop}
-                                          </h6>
-                                          <div className={`topping-price fw-bold ${
-                                            activo ? 'text-success' : 'text-brand'
-                                          }`}>
-                                            +{money(precioExtra)}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })
-                              )}
-                            </div>
-                          </div>
                         )}
-
-                        {/* RESUMEN DEL PRODUCTO */}
-                        <div className="product-summary-card card bg-light border-0">
-                          <div className="card-body p-4">
-                            <h6 className="fw-bold mb-3">📋 Resumen del Producto</h6>
-                            <div className="summary-details">
-                              <div className="d-flex justify-content-between align-items-center mb-3">
-                                <span className="text-muted">Producto base:</span>
-                                <span className="fw-semibold">
-                                  {money(getProductoPrecio(productoSeleccionado))}
-                                </span>
-                              </div>
-                              
-                              {toppingsSeleccionados.length > 0 && (
-                                <div className="toppings-summary mb-3">
-                                  <div className="text-muted mb-2">Toppings seleccionados:</div>
-                                  <div className="selected-toppings">
-                                    {toppingsSeleccionados.map((topping, index) => (
-                                      <span key={index} className="selected-topping-badge">
-                                        {getToppingNombre(topping)} (+{money(getToppingPrecioExtra(topping))})
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              <div className="total-product-price border-top pt-3">
-                                <div className="d-flex justify-content-between align-items-center">
-                                  <span className="fw-bold">Total del producto:</span>
-                                  <span className="fw-bold text-success fs-4">
-                                    {money(precioFinal)}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
                       </div>
-                      
+
                       <div className="col-lg-4">
-                        <div className="action-sidebar">
-                          <div className="action-card card border-0 bg-brand text-white">
-                            <div className="card-body text-center p-4">
-                              <div className="action-icon mb-3">🛒</div>
-                              <h5 className="fw-bold mb-3">¿Listo para agregar?</h5>
-                              <p className="mb-4 opacity-75">
-                                Agrega este producto personalizado a tu pedido actual
-                              </p>
-                              <button
-                                className="btn btn-light btn-lg w-100 fw-bold"
-                                onClick={agregarAlPedido}
-                              >
-                                Agregar al Pedido
-                              </button>
-                            </div>
+                        <div className="card border-0 bg-light p-3">
+                          <h6 className="fw-bold mb-3">📋 Resumen</h6>
+                          <div className="d-flex justify-content-between mb-2">
+                            <span className="text-muted small">Base</span>
+                            <span className="fw-semibold">{money(getProductoPrecio(productoSeleccionado))}</span>
                           </div>
+                          {toppingsSeleccionados.map((t) => (
+                            <div key={t.id_topping} className="d-flex justify-content-between mb-1">
+                              <span className="text-muted small">{getToppingNombre(t)}</span>
+                              <span className="small">+{money(getToppingPrecio(t))}</span>
+                            </div>
+                          ))}
+                          <div className="d-flex justify-content-between border-top pt-2 mt-2">
+                            <span className="fw-bold">Total</span>
+                            <span className="fw-bold text-success fs-5">{money(precioFinal)}</span>
+                          </div>
+                          <button className="btn btn-brand w-100 mt-3 btn-lg" onClick={agregarAlPedido}>
+                            Agregar al pedido
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -580,179 +526,178 @@ export default function Pedido() {
             </div>
           </div>
 
-          {/* PANEL LATERAL - RESUMEN Y PAGO */}
+          {/* ── PANEL DERECHO: Pedido ── */}
           <div className="col-xl-4 col-lg-5">
-            <div className="order-summary-card card card-soft shadow-sm sticky-sidebar">
-              <div className="card-header bg-white border-0 py-4">
-                <h4 className="fw-bold mb-0">🛒 Tu Pedido</h4>
+            <div className="card card-soft shadow-sm sticky-sidebar">
+              <div className="card-header bg-white border-0 pt-4 pb-2 px-4">
+                <div className="d-flex justify-content-between align-items-center">
+                  <h4 className="fw-bold mb-0">🛒 Pedido</h4>
+                  {pedido.length > 0 && (
+                    <button className="btn btn-sm btn-outline-danger" onClick={() => setModalVaciar(true)}>
+                      Vaciar
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="card-body p-0">
-                {/* LISTA DE PRODUCTOS EN EL PEDIDO */}
-                <div className="order-items-section p-4 border-bottom">
-                  <div className="order-items-container">
-                    {pedido.length === 0 ? (
-                      <div className="empty-order text-center py-4">
-                        <div className="empty-order-icon">📝</div>
-                        <h6 className="mt-3">Pedido vacío</h6>
-                        <p className="text-muted small">Agrega productos desde el menú</p>
-                      </div>
-                    ) : (
-                      pedido.map((item) => (
-                        <div key={item.id} className="order-item">
-                          <div className="d-flex gap-3">
-                            <img
-                              src={item.producto.img || "/placeholder-image.jpg"}
-                              alt={getProductoNombre(item.producto)}
-                              className="order-item-image"
-                              onError={(e) => {
-                                e.target.src = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjYwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjRjhGOUZBIi8+CjxwYXRoIGQ9Ik0zMCAzN0wyNSA0MkgyNUwyMCAzN0wyNSAzMkgyNUwzMCAzN1oiIGZpbGw9IiNENkQ2RDYiLz4KPC9zdmc+";
-                              }}
-                            />
-                            <div className="flex-grow-1">
-                              <div className="d-flex justify-content-between align-items-start mb-1">
-                                <h6 className="order-item-name fw-semibold mb-0">
-                                  {getProductoNombre(item.producto)}
-                                </h6>
-                                <button
-                                  className="btn btn-outline-danger btn-sm"
-                                  onClick={() => quitarProducto(item.id)}
-                                >
-                                  ×
-                                </button>
-                              </div>
-                              
-                              {item.toppings.length > 0 && (
-                                <div className="order-item-toppings mb-2">
-                                  <small className="text-success">
-                                    + {item.toppings.map(t => getToppingNombre(t)).join(', ')}
-                                  </small>
-                                </div>
-                              )}
-                              
-                              <div className="d-flex justify-content-between align-items-center">
-                                <div className="quantity-controls">
-                                  <input
-                                    type="number"
-                                    className="form-control form-control-sm"
-                                    value={item.cantidad}
-                                    min={1}
-                                    onChange={(e) => cambiarCantidad(item.id, e.target.value)}
-                                    style={{ width: '70px' }}
-                                  />
-                                </div>
-                                <span className="order-item-price fw-bold text-dark">
-                                  {money(item.subtotal)}
-                                </span>
-                              </div>
+                {/* Items */}
+                <div className="px-4 py-2 border-bottom" style={{ maxHeight: 300, overflowY: "auto" }}>
+                  {pedido.length === 0 ? (
+                    <div className="text-center py-4 text-muted">
+                      <div style={{ fontSize: "2rem" }}>📝</div>
+                      <p className="small mt-2 mb-0">Agrega productos desde el menú</p>
+                    </div>
+                  ) : (
+                    pedido.map((item) => (
+                      <div key={item.id} className="d-flex align-items-start gap-2 py-2 border-bottom">
+                        <img
+                          src={item.producto.img || ""}
+                          alt=""
+                          style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
+                          onError={(e) => { e.target.style.display = "none" }}
+                        />
+                        <div className="flex-grow-1 min-w-0">
+                          <div className="fw-semibold small text-truncate">{getProductoNombre(item.producto)}</div>
+                          {item.toppings.length > 0 && (
+                            <div className="small text-success text-truncate">
+                              + {item.toppings.map(getToppingNombre).join(", ")}
                             </div>
+                          )}
+                          <div className="d-flex align-items-center gap-2 mt-1">
+                            <div className="input-group input-group-sm" style={{ width: 80 }}>
+                              <button className="btn btn-outline-secondary btn-sm px-2"
+                                onClick={() => cambiarCantidad(item.id, item.cantidad - 1)}>−</button>
+                              <span className="input-group-text px-2 text-center" style={{ minWidth: 28 }}>{item.cantidad}</span>
+                              <button className="btn btn-outline-secondary btn-sm px-2"
+                                onClick={() => cambiarCantidad(item.id, item.cantidad + 1)}>+</button>
+                            </div>
+                            <span className="fw-bold small text-dark ms-auto">{money(item.subtotal)}</span>
                           </div>
                         </div>
-                      ))
-                    )}
-                  </div>
+                        <button className="btn btn-sm btn-outline-danger px-2" onClick={() => quitarProducto(item.id)}>×</button>
+                      </div>
+                    ))
+                  )}
                 </div>
 
-                {/* RESUMEN DE PAGOS */}
-                <div className="payment-summary-section p-4 border-bottom">
-                  <div className="payment-line d-flex justify-content-between mb-2">
-                    <span className="text-muted">Subtotal:</span>
-                    <span className="fw-semibold">{money(subtotal)}</span>
-                  </div>
-                  
-                  <div className="payment-line d-flex justify-content-between align-items-center mb-3">
-                    <span className="text-muted">Descuento:</span>
-                    <div className="discount-input">
-                      <input
-                        type="number"
-                        className="form-control form-control-sm text-end"
-                        value={descuento}
-                        min={0}
-                        max={subtotal}
-                        onChange={(e) => setDescuento(Number(e.target.value))}
-                        style={{ width: '120px' }}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="payment-total d-flex justify-content-between align-items-center pt-3 border-top">
-                    <span className="fw-bold fs-5">Total a pagar:</span>
+                {/* Totales */}
+                <div className="px-4 py-3 border-bottom">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <span className="fw-bold">Total</span>
                     <span className="fw-bold text-success fs-4">{money(total)}</span>
                   </div>
                 </div>
 
-                {/* INFORMACIÓN DE PAGO */}
-                <div className="payment-info-section p-4">
-                  <div className="mb-4">
-                    <label className="form-label fw-semibold mb-2">👤 Cliente (opcional)</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={cliente}
-                      onChange={(e) => setCliente(e.target.value)}
-                      placeholder="Nombre del cliente"
-                    />
+                {/* Pago */}
+                <div className="px-4 py-3">
+                  <div className="mb-3">
+                    <label className="form-label small fw-semibold">👤 Cliente (opcional)</label>
+                    <input type="text" className="form-control form-control-sm"
+                      value={cliente} onChange={(e) => setCliente(e.target.value)}
+                      placeholder="Nombre del cliente" />
                   </div>
 
-                  <div className="mb-4">
-                    <label className="form-label fw-semibold mb-2">💳 Método de pago</label>
-                    <select
-                      className="form-select"
-                      value={metodoPago}
-                      onChange={(e) => setMetodoPago(e.target.value)}
-                    >
-                      <option value="">Seleccionar método...</option>
+                  <div className="mb-3">
+                    <label className="form-label small fw-semibold">💳 Método de pago</label>
+                    <div className="d-flex gap-2 flex-wrap">
                       {metodosPago.map((m) => (
-                        <option key={m.id} value={m.nombre_metodo}>
-                          {m.nombre_metodo}
-                        </option>
+                        <button
+                          key={m.id}
+                          className={`btn btn-sm flex-grow-1 ${metodoPago === m.nombre_metodo ? "btn-brand" : "btn-outline-secondary"}`}
+                          onClick={() => {
+                            setMetodoPago(m.nombre_metodo)
+                            // Transferencia: monto exacto automático
+                            if (m.nombre_metodo !== "Efectivo") {
+                              setPago(total)
+                            } else {
+                              setPago(0)
+                            }
+                          }}
+                        >
+                          {m.nombre_metodo === "Efectivo" ? "💵" : m.nombre_metodo === "Transferencia" ? "📱" : "💳"} {m.nombre_metodo}
+                        </button>
                       ))}
-                    </select>
+                    </div>
                   </div>
 
-                  <div className="row g-3 mb-4">
-                    <div className="col-7">
-                      <label className="form-label fw-semibold mb-2">💰 Pago recibido</label>
-                      <input
-                        type="number"
-                        className="form-control"
-                        value={pago}
-                        onChange={(e) => setPago(Number(e.target.value))}
-                        min={0}
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="col-5">
-                      <label className="form-label fw-semibold mb-2">🪙 Cambio</label>
-                      <div className="change-display form-control bg-success bg-opacity-10 fw-bold text-success text-center">
-                        {money(cambio)}
+                  {/* Monto recibido + billetes rápidos — solo Efectivo */}
+                  {metodoPago === "Efectivo" && (
+                    <div className="mb-3">
+                      <label className="form-label small fw-semibold">💰 Monto recibido</label>
+                      <input type="number" className="form-control form-control-sm mb-2"
+                        value={pago || ""} min={0}
+                        placeholder="Ingresa el monto..."
+                        onChange={(e) => setPago(Number(e.target.value))} />
+                      {/* Botones de billetes rápidos */}
+                      <div className="d-flex flex-wrap gap-1">
+                        {BILLETES.filter((b) => b >= Math.min(total, 1000)).map((b) => (
+                          <button
+                            key={b}
+                            className={`btn btn-xs border px-2 py-1 ${pago === b ? "btn-brand text-white" : "btn-light"}`}
+                            style={{ fontSize: "0.72rem", borderRadius: 6 }}
+                            onClick={() => setPago(b)}
+                          >
+                            {b >= 1000 ? `$${b / 1000}K` : money(b)}
+                          </button>
+                        ))}
+                        {total > 0 && (
+                          <button
+                            className={`btn btn-xs border px-2 py-1 ${pago === total ? "btn-success text-white" : "btn-light"}`}
+                            style={{ fontSize: "0.72rem", borderRadius: 6 }}
+                            onClick={() => setPago(total)}
+                            title="Pago exacto"
+                          >
+                            Exacto
+                          </button>
+                        )}
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="action-buttons">
-                    <button
-                      className="btn btn-success btn-lg w-100 fw-bold py-3 mb-2"
-                      disabled={!pedido.length || !metodoPago}
-                      onClick={cobrar}
-                    >
-                      💰 COBRAR {money(total)}
-                    </button>
-                    
-                    {pedido.length > 0 && (
-                      <button
-                        className="btn btn-outline-danger w-100"
-                        onClick={vaciarPedido}
-                      >
-                        🗑️ Vaciar Pedido
-                      </button>
-                    )}
-                  </div>
+                  {/* Transferencia: mostrar total automático */}
+                  {metodoPago && metodoPago !== "Efectivo" && (
+                    <div className="mb-3 p-3 rounded" style={{ background: "var(--bg-soft, #f0fdf4)", border: "1px solid #bbf7d0" }}>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <span className="small fw-semibold text-success">📱 Total a transferir</span>
+                        <span className="fw-bold text-success fs-5">{money(total)}</span>
+                      </div>
+                      <div className="small text-muted mt-1">El monto se registra automáticamente</div>
+                    </div>
+                  )}
+
+                  {/* Cambio — solo Efectivo */}
+                  {metodoPago === "Efectivo" && pago > 0 && (
+                    <div className={`d-flex justify-content-between align-items-center rounded p-2 mb-3 ${cambio >= 0 ? "bg-success bg-opacity-10" : "bg-danger bg-opacity-10"}`}>
+                      <span className="small fw-semibold">🪙 Cambio</span>
+                      <span className={`fw-bold ${cambio >= 0 ? "text-success" : "text-danger"}`}>{money(cambio)}</span>
+                    </div>
+                  )}
+
+                  {/* Botón cobrar */}
+                  <button
+                    className="btn btn-success btn-lg w-100 fw-bold py-3"
+                    disabled={
+                      !pedido.length ||
+                      !metodoPago ||
+                      cobrandoLoad ||
+                      pago < total
+                    }
+                    onClick={cobrar}
+                  >
+                    {cobrandoLoad
+                      ? <><span className="spinner-border spinner-border-sm me-2" />Procesando...</>
+                      : `💰 COBRAR ${money(total)}`}
+                  </button>
 
                   {pedido.length > 0 && !metodoPago && (
-                    <div className="alert alert-warning mt-3 text-center">
-                      ⚠️ Selecciona un método de pago para continuar
-                    </div>
+                    <p className="text-warning small text-center mt-2 mb-0">⚠️ Selecciona método de pago</p>
+                  )}
+                  {pedido.length > 0 && metodoPago === "Efectivo" && pago > 0 && pago < total && (
+                    <p className="text-danger small text-center mt-2 mb-0">⚠️ Faltan {money(total - pago)} para completar el pago</p>
+                  )}
+                  {pedido.length > 0 && metodoPago === "Efectivo" && pago <= 0 && (
+                    <p className="text-warning small text-center mt-2 mb-0">⚠️ Ingresa el monto recibido</p>
                   )}
                 </div>
               </div>
@@ -761,244 +706,66 @@ export default function Pedido() {
         </div>
       </main>
 
-      <footer className="py-3 mt-3">
-        <div className="container">
-          <div className="row align-items-center">
-            <div className="col-md-4 text-center text-md-start mb-3 mb-md-0">
-              <Link
-                to="/"
-                className="text-decoration-none fw-bold text-gradient d-flex align-items-center"
-              >
-                <span className="display-6 me-2">🍨</span>
-                <span>&copy; 2024 NixGelato</span>
-              </Link>
-            </div>
-            <div className="col-md-4 text-center mb-3 mb-md-0">
-              <p className="mb-0 text-muted">
-                Desarrollado por Elvis Montoya y Juan Hernandez
-              </p>
-            </div>
-            <div className="col-md-4 text-center text-md-end">
-              <div className="d-flex justify-content-center justify-content-md-end gap-4">
-                <a
-                  href="https://www.instagram.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-decoration-none text-muted hover-lift d-flex align-items-center"
-                >
-                  <span className="me-1">📷</span> Instagram
-                </a>
-                <a
-                  href="https://www.facebook.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-decoration-none text-muted hover-lift d-flex align-items-center"
-                >
-                  <span className="me-1">👥</span> Facebook
-                </a>
+      {/* Modal vaciar pedido */}
+      <ModalConfirmar
+        config={modalVaciar ? {
+          titulo: "¿Vaciar el pedido?",
+          mensaje: "Se eliminarán todos los productos del pedido actual.",
+          tipo: "danger",
+          txtOk: "Vaciar",
+        } : null}
+        onConfirm={() => { setPedido([]); setModalVaciar(false); }}
+        onCancel={() => setModalVaciar(false)}
+      />
+
+      {/* Modal éxito de venta */}
+      {modalExito && (
+        <>
+          <div style={{ position: "fixed", inset: 0, zIndex: 1060, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(3px)" }} />
+          <div style={{ position: "fixed", inset: 0, zIndex: 1065, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+            <div className="card border-0 shadow-lg text-center" style={{ maxWidth: 400, width: "100%", borderRadius: "1.25rem" }}>
+              <div className="card-body p-5">
+                <div style={{ fontSize: "3.5rem" }}>✅</div>
+                <h4 className="fw-bold mt-3 mb-1">¡Venta registrada!</h4>
+                <p className="text-muted mb-1">Factura <strong>#{modalExito.id_factura}</strong></p>
+                <div className="my-3 py-3 rounded" style={{ background: "var(--bg-soft, #f8f9fa)" }}>
+                  <div className="text-muted small">Total cobrado</div>
+                  <div className="fw-bold text-success" style={{ fontSize: "1.8rem" }}>{money(modalExito.total)}</div>
+                </div>
+                <div className="d-flex gap-2 justify-content-center mt-3">
+                  <button className="btn btn-outline-secondary" onClick={() => window.print()}>
+                    🖨️ Imprimir ticket
+                  </button>
+                  <button className="btn btn-brand px-4" onClick={() => { setModalExito(null); setVentaParaTicket(null); }}>
+                    Nueva venta →
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </footer>
+        </>
+      )}
 
-      {/* ESTILOS MEJORADOS */}
+      {/* Ticket de impresión (oculto en pantalla, visible solo al imprimir) */}
+      <Ticket venta={ventaParaTicket} />
+
       <style>{`
-        .fixed-nav {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          background: white;
-          z-index: 1030;
-          box-shadow: 0 2px 20px rgba(0,0,0,0.1);
-          animation: slideDown 0.3s ease;
-        }
-        
-        @keyframes slideDown {
-          from { transform: translateY(-100%); }
-          to { transform: translateY(0); }
-        }
-        
-        .sticky-sidebar {
-          position: sticky;
-          top: 90px;
-        }
-        
-        .product-card {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          border-radius: 12px;
-          overflow: hidden;
-        }
-        
-        .product-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-        }
-        
-        .product-image-container {
-          height: 160px;
-          overflow: hidden;
-        }
-        
-        .product-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.3s ease;
-        }
-        
-        .product-card:hover .product-image {
-          transform: scale(1.05);
-        }
-        
-        .product-overlay {
-          position: absolute;
-          top: 12px;
-          left: 12px;
-        }
-        
-        .product-badge-top {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-        }
-        
-        .topping-card {
-          transition: all 0.3s ease;
-          cursor: pointer;
-          border: 2px solid transparent;
-          border-radius: 12px;
-        }
-        
-        .topping-card:hover {
-          border-color: var(--brand);
-          transform: translateY(-2px);
-        }
-        
-        .topping-active {
-          border-color: var(--brand);
-          background-color: var(--brand);
-          color: white;
-        }
-        
-        .topping-active .topping-price {
-          color: white !important;
-        }
-        
-        .selected-toppings {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        
-        .selected-topping-badge {
-          background: var(--success);
-          color: white;
-          padding: 4px 8px;
-          border-radius: 20px;
-          font-size: 0.75rem;
-          font-weight: 500;
-        }
-        
-        .order-item {
-          padding: 16px 0;
-          border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .order-item:last-child {
-          border-bottom: none;
-        }
-        
-        .order-item-image {
-          width: 60px;
-          height: 60px;
-          object-fit: cover;
-          border-radius: 8px;
-        }
-        
-        .empty-state {
-          padding: 60px 20px;
-        }
-        
-        .empty-state-icon {
-          font-size: 4rem;
-          opacity: 0.5;
-        }
-        
-        .category-section {
-          margin-bottom: 3rem;
-        }
-        
-        .category-header {
-          padding: 0 1rem;
-        }
-        
-        .action-card {
-          border-radius: 16px;
-          background: linear-gradient(135deg, var(--brand), var(--brand-dark));
-        }
-        
-        .hover-lift {
-          transition: transform 0.2s ease;
-        }
-        
-        .hover-lift:hover {
-          transform: translateY(-2px);
-        }
-        
-        .cursor-pointer {
-          cursor: pointer;
-        }
-        
-        .line-clamp-2 {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        
-        .feature-tag {
-          background: var(--info);
-          color: white;
-          padding: 2px 8px;
-          border-radius: 12px;
-          font-size: 0.7rem;
-          font-weight: 500;
-        }
-        
-        .stock-badge {
-          font-size: 0.7rem;
-        }
-        
-        .product-title {
-          font-size: 0.9rem;
-          line-height: 1.3;
-        }
-        
-        .order-items-container {
-          max-height: 400px;
-          overflow-y: auto;
-          padding-right: 8px;
-        }
-        
-        .order-items-container::-webkit-scrollbar {
-          width: 4px;
-        }
-        
-        .order-items-container::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 2px;
-        }
-        
-        .order-items-container::-webkit-scrollbar-thumb {
-          background: #c1c1c1;
-          border-radius: 2px;
-        }
-        
-        .order-items-container::-webkit-scrollbar-thumb:hover {
-          background: #a8a8a8;
-        }
+        .fixed-nav { position:fixed; top:0; left:0; right:0; background:white; z-index:1030; box-shadow:0 2px 20px rgba(0,0,0,.1); animation:slideDown .25s ease; }
+        @keyframes slideDown { from{transform:translateY(-100%)} to{transform:translateY(0)} }
+        .sticky-sidebar { position:sticky; top:90px; }
+        .product-card { transition:all .25s ease; border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.07); }
+        .product-card.hover-lift:hover { transform:translateY(-6px); box-shadow:0 12px 30px rgba(0,0,0,.13); }
+        .product-image-container { height:140px; overflow:hidden; background:#f8f9fa; }
+        .product-image { width:100%; height:100%; object-fit:cover; transition:transform .3s; }
+        .product-card:hover .product-image { transform:scale(1.05); }
+        .product-overlay { position:absolute; bottom:8px; left:8px; }
+        .product-badge-top { position:absolute; top:8px; right:8px; }
+        .topping-card { border:2px solid #dee2e6; border-radius:10px; cursor:pointer; transition:all .2s; }
+        .topping-card:hover { border-color:var(--brand,#0d6efd); transform:translateY(-2px); }
+        .topping-active { border-color:var(--brand,#0d6efd) !important; background:var(--brand,#0d6efd) !important; color:white; }
+        .cursor-pointer { cursor:pointer; }
+        .hover-lift { cursor:pointer; }
+        .btn-xs { font-size:.72rem; padding:.2rem .5rem; }
       `}</style>
     </>
   );

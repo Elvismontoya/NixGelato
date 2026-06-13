@@ -1,46 +1,28 @@
-# Node (root y server)
+# Dependencies
 node_modules/
 server/node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
 
-# Builds / bundles
+# Build
 dist/
 build/
-.out/
-.next/
-.vercel/
-coverage/
-*.log
 
-# Caches / herramientas
-.eslintcache
-.cache/
-.turbo/
-*.tgz
-
-# Env y secretos
+# Env files - NEVER commitear
 .env
-.env.*
-!.env.example
+.env.local
+.env.*.local
 server/.env
-server/.env.*
-!server/.env.example
-*.pem
-*.key
-.envrc
+server/.env.local
 
-# SO / IDE
-.DS_Store
-Thumbs.db
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# (Opcional) Bases locales (si usas SQLite en dev)
-server/prisma/*.db
-server/prisma/*.db-journal
-*.sqlite
-*.db
-*.db-journal
+# OS
+.DS_Store
+Thumbs.db
