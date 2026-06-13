@@ -15,8 +15,8 @@ function fechaHoyCol() {
 }
 
 // ── GET /api/caja/estado ───────────────────────────────────
-// Devuelve la apertura del empleado actual para hoy (multi-caja)
-router.get('/estado', verifyToken, requireRoles('admin', 'cajero'), async (req, res) => {
+// Caja compartida: devuelve la apertura del día (la abra quien sea)
+router.get('/estado', verifyToken, requireRoles('admin', 'cajero'), async (_req, res) => {
   try {
     const hoy = fechaHoyCol()
     const { data, error } = await supabaseAdmin
@@ -30,7 +30,6 @@ router.get('/estado', verifyToken, requireRoles('admin', 'cajero'), async (req, 
         empleados:empleados!aperturas_caja_id_empleado_fkey(nombres, apellidos)
       `)
       .eq('fecha', hoy)
-      .eq('id_empleado', req.user.id_empleado)
       .order('id_apertura', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -96,7 +95,7 @@ router.get('/historial', verifyToken, requireAdmin, async (req, res) => {
 })
 
 // ── POST /api/caja/apertura ────────────────────────────────
-// Multi-caja: cada empleado puede abrir su propia caja del día
+// Caja compartida: una sola apertura por día, sin importar quién la abra
 router.post('/apertura', verifyToken, requireRoles('admin', 'cajero'), async (req, res) => {
   const { monto_apertura, observaciones } = req.body
   const monto = Number(monto_apertura)
@@ -108,17 +107,19 @@ router.post('/apertura', verifyToken, requireRoles('admin', 'cajero'), async (re
   try {
     const hoy = fechaHoyCol()
 
-    // Verificar que ESTE empleado no tenga ya una apertura abierta hoy
+    // Verificar que NO exista ya una apertura para hoy (de cualquier empleado)
     const { data: existing } = await supabaseAdmin
       .from('aperturas_caja')
       .select('id_apertura, estado')
       .eq('fecha', hoy)
-      .eq('id_empleado', req.user.id_empleado)
-      .eq('estado', 'abierta')
       .maybeSingle()
 
     if (existing) {
-      return res.status(409).json({ message: 'Ya tienes una caja abierta hoy' })
+      return res.status(409).json({
+        message: existing.estado === 'abierta'
+          ? 'La caja de hoy ya fue abierta'
+          : 'La caja de hoy ya fue abierta y cerrada. No se puede abrir otra.',
+      })
     }
 
     const { data: apertura, error } = await supabaseAdmin
@@ -174,7 +175,7 @@ router.post('/cierre', verifyToken, requireAdmin, async (req, res) => {
     if (errAp || !apertura) return res.status(404).json({ message: 'Apertura no encontrada' })
     if (apertura.estado === 'cerrada') return res.status(400).json({ message: 'Esta caja ya está cerrada' })
 
-    // Calcular ventas en efectivo del día, hechas por el empleado dueño de esta caja
+    // Calcular ventas en efectivo del día (de todos los empleados, caja compartida)
     const hoy = apertura.fecha
     const { data: facturas, error: errFact } = await supabaseAdmin
       .from('facturas')
@@ -185,7 +186,6 @@ router.post('/cierre', verifyToken, requireAdmin, async (req, res) => {
           metodos_pago:metodos_pago!facturas_pagos_id_metodo_fkey(nombre_metodo)
         )
       `)
-      .eq('id_empleado', apertura.id_empleado)
       .gte('fecha_hora', `${hoy}T00:00:00`)
       .lte('fecha_hora', `${hoy}T23:59:59`)
 

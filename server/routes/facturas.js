@@ -154,7 +154,7 @@ router.get('/', verifyToken, async (req, res) => {
   try {
     let query = supabaseAdmin
       .from('facturas')
-      .select('*, empleados:empleados(nombres, apellidos)')
+      .select('*, empleados:empleados!facturas_id_empleado_fkey(nombres, apellidos)')
       .order('fecha_hora', { ascending: false })
 
     if (fecha_desde) query = query.gte('fecha_hora', `${fecha_desde}T00:00:00`)
@@ -188,7 +188,7 @@ router.get('/:id/detalle', verifyToken, async (req, res) => {
   try {
     const { data: factura, error: errFactura } = await supabaseAdmin
       .from('facturas')
-      .select('*, empleados:empleados(nombres, apellidos)')
+      .select('*, empleados:empleados!facturas_id_empleado_fkey(nombres, apellidos)')
       .eq('id_factura', id)
       .single()
 
