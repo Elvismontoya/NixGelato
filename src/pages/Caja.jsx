@@ -28,6 +28,7 @@ export default function Caja() {
   const [msgCierre,   setMsgCierre]     = useState({ text: '', type: 'muted' })
   const [loadCierre,  setLoadCierre]    = useState(false)
   const [resumenCierre, setResumenCierre] = useState(null)
+  const [cajasHoy, setCajasHoy] = useState([])
 
   function logout() {
     localStorage.removeItem('token')
@@ -69,9 +70,24 @@ export default function Caja() {
     }
   }
 
+  async function cargarCajasHoy() {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/caja/estado-todas`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setCajasHoy(Array.isArray(data.cajas) ? data.cajas : [])
+      }
+    } catch (err) {
+      console.error('Cajas de hoy:', err)
+    }
+  }
+
   useEffect(() => {
     cargarEstado()
     cargarHistorial()
+    cargarCajasHoy()
   }, [])
 
   // ── Apertura ─────────────────────────────────────────────
@@ -100,6 +116,7 @@ export default function Caja() {
       setObsApertura('')
       await cargarEstado()
       await cargarHistorial()
+      await cargarCajasHoy()
     } catch (err) {
       console.error(err)
       setMsgApertura({ text: 'Error al conectar con el servidor', type: 'danger' })
@@ -144,6 +161,7 @@ export default function Caja() {
       setObsCierre('')
       await cargarEstado()
       await cargarHistorial()
+      await cargarCajasHoy()
     } catch (err) {
       console.error(err)
       setMsgCierre({ text: 'Error al conectar con el servidor', type: 'danger' })
@@ -214,14 +232,6 @@ export default function Caja() {
             </button>
           </div>
         )}
-          <div className="alert alert-danger d-flex justify-content-between align-items-center">
-            {errorGlobal}
-            <button className="btn btn-sm btn-outline-danger" onClick={() => { cargarEstado(); cargarHistorial() }}>
-              Reintentar
-            </button>
-          </div>
-        
-
 
         {/* Estado del día */}
         <div className="card card-soft mb-4">
@@ -230,7 +240,7 @@ export default function Caja() {
               <h5 className="mb-0">Estado de caja — hoy</h5>
               <div className="d-flex gap-2 align-items-center">
                 {estadoBadge ?? <span className="badge bg-warning text-dark fs-6">⚪ Sin apertura</span>}
-                <button className="btn btn-sm btn-outline-secondary" onClick={() => { cargarEstado(); cargarHistorial() }}>
+                <button className="btn btn-sm btn-outline-secondary" onClick={() => { cargarEstado(); cargarHistorial(); cargarCajasHoy() }}>
                   🔄
                 </button>
               </div>
@@ -268,6 +278,43 @@ export default function Caja() {
             )}
           </div>
         </div>
+
+        {/* Cajas abiertas hoy (multi-caja) */}
+        {cajasHoy.length > 0 && (
+          <div className="card card-soft mb-4">
+            <div className="card-body">
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="fw-bold mb-0">👥 Cajas del día (todos los cajeros)</h6>
+                <span className="badge bg-info">{cajasHoy.length}</span>
+              </div>
+              <div className="row g-2">
+                {cajasHoy.map((c) => (
+                  <div className="col-md-4 col-sm-6" key={c.id_apertura}>
+                    <div className="card card-soft p-3 h-100">
+                      <div className="d-flex justify-content-between align-items-start mb-1">
+                        <span className="fw-semibold small">
+                          {c.empleados ? `${c.empleados.nombres} ${c.empleados.apellidos}` : `Empleado #${c.id_empleado}`}
+                        </span>
+                        {c.estado === 'abierta'
+                          ? <span className="badge bg-success">🟢 Abierta</span>
+                          : <span className="badge bg-secondary">🔴 Cerrada</span>}
+                      </div>
+                      <div className="small text-muted">Apertura: {money(c.monto_apertura)}</div>
+                      {c.monto_cierre != null && (
+                        <>
+                          <div className="small text-muted">Cierre: {money(c.monto_cierre)}</div>
+                          <div className={`small fw-semibold ${Number(c.diferencia) > 0 ? "text-success" : Number(c.diferencia) < 0 ? "text-danger" : "text-muted"}`}>
+                            Diferencia: {money(c.diferencia)}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Resumen de cierre (se muestra tras cerrar) */}
         {resumenCierre && (

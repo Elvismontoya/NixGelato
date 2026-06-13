@@ -77,6 +77,7 @@ router.get('/ingresos-hoy', verifyToken, requireAdmin, async (_req, res) => {
     const { data, error } = await supabaseAdmin
       .from('facturas')
       .select('total_neto, fecha_hora')
+      .eq('anulada', false)
       .gte('fecha_hora', `${hoy}T00:00:00`)
       .lte('fecha_hora', `${hoy}T23:59:59`)
       .order('fecha_hora', { ascending: false })

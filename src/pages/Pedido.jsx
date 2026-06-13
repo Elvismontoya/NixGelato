@@ -235,6 +235,55 @@ export default function Pedido() {
     }
   }, [total, metodoPago]);
 
+  // ── Atajos de teclado ────────────────────────────────────
+  useEffect(() => {
+    function onKeyDown(e) {
+      const tag = document.activeElement?.tagName;
+      const escribiendo = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+
+      // Esc: cerrar modales, salir de personalización, o vaciar pedido
+      if (e.key === "Escape") {
+        if (modalExito) { setModalExito(null); setVentaParaTicket(null); return; }
+        if (modalVaciar) { setModalVaciar(false); return; }
+        if (productoSeleccionado) { setProductoSeleccionado(null); setToppingsSeleccionados([]); return; }
+        if (pedido.length > 0) { setModalVaciar(true); return; }
+        return;
+      }
+
+      // Si hay un modal abierto, no procesar más atajos
+      if (modalExito || modalVaciar || productoSeleccionado) return;
+
+      // Enter: cobrar si es posible
+      if (e.key === "Enter" && !escribiendo) {
+        if (pedido.length > 0 && metodoPago && pago >= total && !cobrandoLoad) {
+          e.preventDefault();
+          cobrar();
+        }
+        return;
+      }
+
+      // Números 1-8: seleccionar billete rápido (solo si NO está escribiendo y método es Efectivo)
+      if (!escribiendo && metodoPago === "Efectivo" && /^[1-8]$/.test(e.key)) {
+        const idx = Number(e.key) - 1;
+        const billetesDisponibles = BILLETES.filter((b) => b >= Math.min(total, 1000));
+        if (billetesDisponibles[idx] !== undefined) {
+          e.preventDefault();
+          setPago(billetesDisponibles[idx]);
+        }
+        return;
+      }
+
+      // Tecla "0": pago exacto
+      if (!escribiendo && metodoPago === "Efectivo" && e.key === "0" && total > 0) {
+        e.preventDefault();
+        setPago(total);
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [modalExito, modalVaciar, productoSeleccionado, pedido, metodoPago, pago, total, cobrandoLoad]);
+
   // ── Cobrar ─────────────────────────────────────────────────
   async function cobrar() {
     if (!pedido.length || !metodoPago) return;

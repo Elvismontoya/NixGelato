@@ -844,6 +844,27 @@ export default function Admin() {
                       <div className="form-text">
                         Usa una URL de imagen válida o déjalo vacío
                       </div>
+                      {formProducto.img.trim() && (
+                        <div className="mt-2 d-flex align-items-center gap-3 p-2 rounded" style={{ background: "var(--bg-soft, #f8f9fa)" }}>
+                          <img
+                            src={formProducto.img.trim()}
+                            alt="Vista previa"
+                            style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }}
+                            onLoad={(e) => {
+                              e.target.style.display = "block";
+                              e.target.nextSibling.style.display = "none";
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                              e.target.nextSibling.style.display = "block";
+                            }}
+                          />
+                          <span className="small text-danger" style={{ display: "none" }}>
+                            ⚠️ No se pudo cargar la imagen desde esta URL
+                          </span>
+                          <span className="small text-muted">Vista previa</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mb-3">

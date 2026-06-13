@@ -15,8 +15,8 @@ function fechaHoyCol() {
 }
 
 // ── GET /api/caja/estado ───────────────────────────────────
-// Devuelve la apertura de hoy si existe (abierta o cerrada)
-router.get('/estado', verifyToken, requireRoles('admin', 'cajero'), async (_req, res) => {
+// Devuelve la apertura del empleado actual para hoy (multi-caja)
+router.get('/estado', verifyToken, requireRoles('admin', 'cajero'), async (req, res) => {
   try {
     const hoy = fechaHoyCol()
     const { data, error } = await supabaseAdmin
@@ -26,9 +26,11 @@ router.get('/estado', verifyToken, requireRoles('admin', 'cajero'), async (_req,
         total_ventas_efectivo, diferencia, estado,
         observaciones_apertura, observaciones_cierre,
         fecha_hora_apertura, fecha_hora_cierre,
+        id_empleado,
         empleados:empleados!aperturas_caja_id_empleado_fkey(nombres, apellidos)
       `)
       .eq('fecha', hoy)
+      .eq('id_empleado', req.user.id_empleado)
       .order('id_apertura', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -42,19 +44,47 @@ router.get('/estado', verifyToken, requireRoles('admin', 'cajero'), async (_req,
   }
 })
 
+// ── GET /api/caja/estado-todas ──────────────────────────────
+// Admin: ver todas las cajas abiertas/cerradas hoy (multi-caja)
+router.get('/estado-todas', verifyToken, requireAdmin, async (_req, res) => {
+  try {
+    const hoy = fechaHoyCol()
+    const { data, error } = await supabaseAdmin
+      .from('aperturas_caja')
+      .select(`
+        id_apertura, fecha, monto_apertura, monto_cierre,
+        total_ventas_efectivo, diferencia, estado,
+        observaciones_apertura, observaciones_cierre,
+        fecha_hora_apertura, fecha_hora_cierre,
+        id_empleado,
+        empleados:empleados!aperturas_caja_id_empleado_fkey(nombres, apellidos)
+      `)
+      .eq('fecha', hoy)
+      .order('fecha_hora_apertura', { ascending: true })
+
+    if (error) throw error
+    res.json({ fecha: hoy, cajas: data ?? [] })
+  } catch (err) {
+    console.error('GET /caja/estado-todas:', err.message)
+    res.status(500).json({ message: 'Error al consultar cajas del día' })
+  }
+})
+
 // ── GET /api/caja/historial ────────────────────────────────
 router.get('/historial', verifyToken, requireAdmin, async (req, res) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit ?? '30', 10), 90)
+    const limit = Math.min(parseInt(req.query.limit ?? '60', 10), 200)
     const { data, error } = await supabaseAdmin
       .from('aperturas_caja')
       .select(`
         id_apertura, fecha, monto_apertura, monto_cierre,
         total_ventas_efectivo, diferencia, estado,
         fecha_hora_apertura, fecha_hora_cierre,
+        id_empleado,
         empleados:empleados!aperturas_caja_id_empleado_fkey(nombres, apellidos)
       `)
       .order('fecha', { ascending: false })
+      .order('fecha_hora_apertura', { ascending: false })
       .limit(limit)
 
     if (error) throw error
@@ -66,6 +96,7 @@ router.get('/historial', verifyToken, requireAdmin, async (req, res) => {
 })
 
 // ── POST /api/caja/apertura ────────────────────────────────
+// Multi-caja: cada empleado puede abrir su propia caja del día
 router.post('/apertura', verifyToken, requireRoles('admin', 'cajero'), async (req, res) => {
   const { monto_apertura, observaciones } = req.body
   const monto = Number(monto_apertura)
@@ -77,16 +108,17 @@ router.post('/apertura', verifyToken, requireRoles('admin', 'cajero'), async (re
   try {
     const hoy = fechaHoyCol()
 
-    // Verificar que no haya apertura abierta hoy
+    // Verificar que ESTE empleado no tenga ya una apertura abierta hoy
     const { data: existing } = await supabaseAdmin
       .from('aperturas_caja')
       .select('id_apertura, estado')
       .eq('fecha', hoy)
+      .eq('id_empleado', req.user.id_empleado)
       .eq('estado', 'abierta')
       .maybeSingle()
 
     if (existing) {
-      return res.status(409).json({ message: 'Ya existe una apertura de caja abierta para hoy' })
+      return res.status(409).json({ message: 'Ya tienes una caja abierta hoy' })
     }
 
     const { data: apertura, error } = await supabaseAdmin
@@ -121,6 +153,7 @@ router.post('/apertura', verifyToken, requireRoles('admin', 'cajero'), async (re
 })
 
 // ── POST /api/caja/cierre ──────────────────────────────────
+// Calcula ventas en efectivo del EMPLEADO dueño de la apertura
 router.post('/cierre', verifyToken, requireAdmin, async (req, res) => {
   const { id_apertura, monto_cierre, observaciones } = req.body
   const montoCierre = Number(monto_cierre)
@@ -134,32 +167,34 @@ router.post('/cierre', verifyToken, requireAdmin, async (req, res) => {
     // Obtener la apertura
     const { data: apertura, error: errAp } = await supabaseAdmin
       .from('aperturas_caja')
-      .select('id_apertura, fecha, monto_apertura, estado')
+      .select('id_apertura, fecha, monto_apertura, estado, id_empleado')
       .eq('id_apertura', id_apertura)
       .single()
 
     if (errAp || !apertura) return res.status(404).json({ message: 'Apertura no encontrada' })
     if (apertura.estado === 'cerrada') return res.status(400).json({ message: 'Esta caja ya está cerrada' })
 
-    // Calcular ventas en efectivo del día
+    // Calcular ventas en efectivo del día, hechas por el empleado dueño de esta caja
     const hoy = apertura.fecha
     const { data: facturas, error: errFact } = await supabaseAdmin
       .from('facturas')
       .select(`
-        total_neto, fecha_hora,
+        total_neto, fecha_hora, id_empleado, anulada,
         facturas_pagos:facturas_pagos(
           monto_pagado,
           metodos_pago:metodos_pago!facturas_pagos_id_metodo_fkey(nombre_metodo)
         )
       `)
+      .eq('id_empleado', apertura.id_empleado)
       .gte('fecha_hora', `${hoy}T00:00:00`)
       .lte('fecha_hora', `${hoy}T23:59:59`)
 
     if (errFact) throw errFact
 
-    // Solo contar pagos en efectivo
+    // Solo contar pagos en efectivo de facturas no anuladas
     let totalEfectivo = 0
     for (const f of facturas ?? []) {
+      if (f.anulada) continue
       for (const p of f.facturas_pagos ?? []) {
         if (p.metodos_pago?.nombre_metodo?.toLowerCase() === 'efectivo') {
           totalEfectivo += Number(p.monto_pagado) || 0

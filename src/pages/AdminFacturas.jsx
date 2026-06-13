@@ -30,6 +30,12 @@ export default function AdminFacturas() {
   const [detalle,    setDetalle]    = useState(null);
   const [loadDetalle, setLoadDetalle] = useState(false);
 
+  // Anular venta
+  const [modalAnular,  setModalAnular]  = useState(null); // factura
+  const [motivoAnular, setMotivoAnular] = useState("");
+  const [msgAnular,    setMsgAnular]    = useState({ text: "", type: "" });
+  const [loadAnular,   setLoadAnular]   = useState(false);
+
   // Auth
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -102,6 +108,42 @@ export default function AdminFacturas() {
     }
   }
 
+  function pedirAnular(factura) {
+    setModalAnular(factura);
+    setMotivoAnular("");
+    setMsgAnular({ text: "", type: "" });
+  }
+
+  async function anularVenta() {
+    if (!motivoAnular.trim()) {
+      setMsgAnular({ text: "Debes indicar un motivo para anular la venta.", type: "danger" });
+      return;
+    }
+    setLoadAnular(true);
+    setMsgAnular({ text: "", type: "" });
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/facturas/${modalAnular.id_factura}/anular`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
+          body: JSON.stringify({ motivo: motivoAnular.trim() }),
+        }
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsgAnular({ text: data.message || "Error al anular la venta", type: "danger" });
+        return;
+      }
+      setModalAnular(null);
+      await cargarFacturas(fechaDesde, fechaHasta, idEmpleado);
+    } catch {
+      setMsgAnular({ text: "Error al conectar con el servidor", type: "danger" });
+    } finally {
+      setLoadAnular(false);
+    }
+  }
+
   useEffect(() => {
     cargarEmpleados();
     cargarFacturas();
@@ -127,24 +169,24 @@ export default function AdminFacturas() {
 
   // ── KPIs ──────────────────────────────────────────────────
   const kpis = useMemo(() => {
-    const totalNeto  = facturasFiltradas.reduce((s, f) => s + Number(f.total_neto  || 0), 0);
-    const descuentos = facturasFiltradas.reduce((s, f) => s + Number(f.descuento_total || 0), 0);
-    const totalBruto = facturasFiltradas.reduce((s, f) => s + Number(f.total_bruto || 0), 0);
-    const n = facturasFiltradas.length;
-    return { n, totalNeto, descuentos, totalBruto, promedio: n ? totalNeto / n : 0 };
+    const validas    = facturasFiltradas.filter((f) => !f.anulada);
+    const anuladas   = facturasFiltradas.filter((f) => f.anulada);
+    const totalNeto  = validas.reduce((s, f) => s + Number(f.total_neto  || 0), 0);
+    const n = validas.length;
+    return { n, totalNeto, anuladas: anuladas.length, promedio: n ? totalNeto / n : 0 };
   }, [facturasFiltradas]);
 
   // ── Exportar CSV ──────────────────────────────────────────
   function exportCSV() {
     if (!facturasFiltradas.length) return;
     const cols = [
-      ["ID",         (f) => f.id_factura],
-      ["Fecha/Hora", (f) => new Date(f.fecha_hora).toLocaleString("es-CO")],
-      ["Empleado",   (f) => f.empleado_nombres ?? ""],
-      ["Cliente",    (f) => f.observaciones    ?? ""],
-      ["Subtotal",   (f) => f.total_bruto      ?? 0],
-      ["Descuento",  (f) => f.descuento_total  ?? 0],
-      ["Total",      (f) => f.total_neto       ?? 0],
+      ["ID",               (f) => f.id_factura],
+      ["Fecha/Hora",       (f) => new Date(f.fecha_hora).toLocaleString("es-CO")],
+      ["Empleado",         (f) => f.empleado_nombres ?? ""],
+      ["Cliente",          (f) => f.observaciones    ?? ""],
+      ["Total",            (f) => f.total_neto       ?? 0],
+      ["Estado",           (f) => f.anulada ? "Anulada" : "Válida"],
+      ["Motivo anulación", (f) => f.motivo_anulacion ?? ""],
     ];
     const csv = [
       cols.map(([h]) => h).join(","),
@@ -176,8 +218,8 @@ export default function AdminFacturas() {
           {[
             { label: "Total ventas",      val: kpis.n,              fmt: (v) => v },
             { label: "Ingresos netos",    val: kpis.totalNeto,      fmt: money },
-            { label: "Descuentos",        val: kpis.descuentos,     fmt: money },
             { label: "Promedio x venta",  val: kpis.promedio,       fmt: money },
+            { label: "Anuladas",          val: kpis.anuladas,       fmt: (v) => v },
           ].map((s) => (
             <div className="col-6 col-md-3" key={s.label}>
               <div className="card card-soft h-100 text-center p-3">
@@ -261,38 +303,50 @@ export default function AdminFacturas() {
                     <th>Fecha/Hora</th>
                     <th>Empleado</th>
                     <th>Cliente</th>
-                    <th className="text-end">Subtotal</th>
-                    <th className="text-end">Desc.</th>
                     <th className="text-end">Total</th>
-                    <th className="text-end">Ver</th>
+                    <th className="text-center">Estado</th>
+                    <th className="text-end">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {cargando ? (
                     Array.from({ length: 8 }).map((_, i) => (
-                      <tr key={i}><td colSpan={8}>
+                      <tr key={i}><td colSpan={7}>
                         <div className="placeholder-wave"><span className="placeholder col-12" /></div>
                       </td></tr>
                     ))
                   ) : facturasPagina.length === 0 ? (
-                    <tr><td colSpan={8} className="text-center text-muted py-5">
+                    <tr><td colSpan={7} className="text-center text-muted py-5">
                       {busqueda ? `Sin resultados para "${busqueda}"` : "Sin ventas en el período seleccionado"}
                     </td></tr>
                   ) : (
                     facturasPagina.map((f) => (
-                      <tr key={f.id_factura}>
+                      <tr key={f.id_factura} className={f.anulada ? "table-secondary opacity-75" : ""}>
                         <td className="fw-semibold text-muted small">#{f.id_factura}</td>
                         <td className="small">{new Date(f.fecha_hora).toLocaleString("es-CO")}</td>
                         <td><span className="badge bg-light text-dark border">{f.empleado_nombres || "N/A"}</span></td>
                         <td className="small text-muted">{f.observaciones || "—"}</td>
-                        <td className="text-end small">{money(f.total_bruto)}</td>
-                        <td className="text-end small text-danger">{f.descuento_total > 0 ? `-${money(f.descuento_total)}` : "—"}</td>
-                        <td className="text-end fw-bold text-success">{money(f.total_neto)}</td>
+                        <td className={`text-end fw-bold ${f.anulada ? "text-muted text-decoration-line-through" : "text-success"}`}>
+                          {money(f.total_neto)}
+                        </td>
+                        <td className="text-center">
+                          {f.anulada
+                            ? <span className="badge bg-danger" title={f.motivo_anulacion || ""}>Anulada</span>
+                            : <span className="badge bg-success">Válida</span>}
+                        </td>
                         <td className="text-end">
-                          <button className="btn btn-sm btn-outline-brand"
-                            onClick={() => verDetalle(f.id_factura)}>
-                            Ver
-                          </button>
+                          <div className="d-flex gap-1 justify-content-end">
+                            <button className="btn btn-sm btn-outline-brand"
+                              onClick={() => verDetalle(f.id_factura)}>
+                              Ver
+                            </button>
+                            {rol === "admin" && !f.anulada && (
+                              <button className="btn btn-sm btn-outline-danger"
+                                onClick={() => pedirAnular(f)}>
+                                Anular
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -354,6 +408,16 @@ export default function AdminFacturas() {
                   </div>
                 ) : detalle ? (
                   <>
+                    {detalle.factura?.anulada && (
+                      <div className="alert alert-danger mb-3">
+                        <strong>⚠️ Venta anulada</strong>
+                        <div className="small mt-1">
+                          Motivo: {detalle.factura.motivo_anulacion || "—"}
+                          <br />
+                          Fecha de anulación: {detalle.factura.fecha_anulacion ? new Date(detalle.factura.fecha_anulacion).toLocaleString("es-CO") : "—"}
+                        </div>
+                      </div>
+                    )}
                     <div className="row g-3 mb-4">
                       {[
                         { label: "Fecha",    val: new Date(detalle.factura?.fecha_hora).toLocaleString("es-CO") },
@@ -404,6 +468,59 @@ export default function AdminFacturas() {
               </div>
               <div className="card-footer bg-transparent border-0 px-4 pb-4">
                 <button className="btn btn-secondary w-100" onClick={() => setShowModal(false)}>Cerrar</button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Modal anular venta */}
+      {modalAnular && (
+        <>
+          <div style={{ position: "fixed", inset: 0, zIndex: 1060, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(2px)" }}
+            onClick={() => !loadAnular && setModalAnular(null)} />
+          <div style={{ position: "fixed", inset: 0, zIndex: 1065, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", pointerEvents: "none" }}>
+            <div className="card border-0 shadow-lg" style={{ width: "100%", maxWidth: 460, borderRadius: "1.25rem", pointerEvents: "all" }}>
+              <div className="card-body p-4">
+                <div className="text-center mb-3">
+                  <div style={{ fontSize: "2.5rem" }}>🗑️</div>
+                  <h5 className="fw-bold mt-2 mb-1">¿Anular esta venta?</h5>
+                  <p className="text-muted small mb-0">
+                    Venta #{modalAnular.id_factura} por <strong>{money(modalAnular.total_neto)}</strong>
+                  </p>
+                  <p className="text-muted small">
+                    El stock de los productos vendidos será restaurado y la venta quedará marcada como anulada (no se elimina, para fines de auditoría).
+                  </p>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Motivo de anulación *</label>
+                  <textarea
+                    className="form-control"
+                    rows={3}
+                    value={motivoAnular}
+                    onChange={(e) => setMotivoAnular(e.target.value)}
+                    placeholder="Ej: Producto equivocado, error de cobro, cliente canceló..."
+                    autoFocus
+                  />
+                </div>
+
+                {msgAnular.text && (
+                  <div className={`alert alert-${msgAnular.type === "danger" ? "danger" : "success"} py-2 mb-3`}>
+                    {msgAnular.text}
+                  </div>
+                )}
+
+                <div className="d-flex gap-2 justify-content-center">
+                  <button className="btn btn-outline-secondary px-4" onClick={() => setModalAnular(null)} disabled={loadAnular}>
+                    Cancelar
+                  </button>
+                  <button className="btn btn-danger px-4" onClick={anularVenta} disabled={loadAnular}>
+                    {loadAnular
+                      ? <><span className="spinner-border spinner-border-sm me-2" />Anulando...</>
+                      : "Anular venta"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
