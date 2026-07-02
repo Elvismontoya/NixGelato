@@ -25,12 +25,13 @@ Pensado inicialmente para el mercado colombiano, con soporte para cumplimiento t
 
 | Componente | Tecnología |
 |---|---|
-| Frontend | Desplegado en [Vercel](https://vercel.com) |
-| Backend | Desplegado en [Railway](https://railway.app) |
+| Frontend | React 18 + Vite, React Router. Desplegado en [Vercel](https://vercel.com) |
+| Backend | Node.js (carpeta `server/`). Desplegado en [Railway](https://railway.app) |
 | Base de datos | [Supabase](https://supabase.com) (PostgreSQL) |
+| Autenticación | `bcrypt` para hash de contraseñas |
 | Control de versiones / CI | GitHub |
 
-> ℹ️ Ajusta esta tabla con los frameworks específicos que uses (por ejemplo React/Next.js, Node/Express, etc.) para que quede 100% precisa.
+> ℹ️ El backend vive en una subcarpeta `server/` con su propio `package.json`. Si usa Express u otro framework, agrégalo aquí.
 
 ## 🚀 Empezando
 
@@ -44,11 +45,14 @@ Pensado inicialmente para el mercado colombiano, con soporte para cumplimiento t
 
 ```powershell
 # Clonar el repositorio
-git clone https://github.com/Elvismontoya/NixGelato.git
-cd NixGelato
+git clone https://github.com/<tu-usuario>/nixgelato.git
+cd nixgelato
 
-# Instalar dependencias
+# Instalar dependencias del frontend
 npm install
+
+# Instalar dependencias del backend
+npm --prefix server install
 
 # Copiar variables de entorno de ejemplo
 copy .env.example .env
@@ -67,9 +71,26 @@ DATABASE_URL=
 
 ### Ejecutar en desarrollo
 
+El proyecto está dividido en frontend (raíz, Vite) y backend (carpeta `server/`).
+
 ```powershell
+# Frontend solamente
 npm run dev
+
+# Backend solamente
+npm run dev:server
+
+# Frontend + backend a la vez (usando concurrently)
+npm run dev:all
 ```
+
+### Otros scripts disponibles
+
+| Script | Descripción |
+|---|---|
+| `npm run build` | Compila el frontend para producción (Vite) |
+| `npm run preview` | Sirve localmente el build de producción del frontend |
+| `npm run start:server` | Inicia el backend en modo producción |
 
 ## 📦 Despliegue
 
