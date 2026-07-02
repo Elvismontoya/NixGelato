@@ -1,32 +1,92 @@
-##############################################
-# 🔐 CONFIGURACIÓN DE SUPABASE (BACKEND)
-##############################################
+# 🍦 NixGelato
 
-ENLACE DE LA PAGINA https://nixgelato.vercel.app/
+Sistema de Punto de Venta (POS) web para heladerías, diseñado para gestionar ventas, empleados, inventario y caja registradora de forma simple y eficiente.
 
-# URL del proyecto Supabase
+## 📋 Descripción
+
+NixGelato es una aplicación web que permite a heladerías y negocios similares gestionar su operación diaria: desde la apertura de caja y el registro de ventas, hasta el control de empleados, inventario y la impresión de recibos fiscales.
+
+Pensado inicialmente para el mercado colombiano, con soporte para cumplimiento tributario local (NIT, IVA, título de documento equivalente en recibos térmicos de 80mm).
+
+## ✨ Funcionalidades principales
+
+- **Punto de venta (POS)**: interfaz rápida para registrar ventas, con atajos de teclado.
+- **Gestión de empleados**: CRUD de empleados con control de acceso basado en roles.
+- **Caja registradora diaria**: apertura y cierre de caja compartida, con cálculo automático de diferencias. Apertura obligatoria mediante modal.
+- **Dashboard administrativo**: métricas en tiempo real y gráfico de ingresos de los últimos 7 días.
+- **Historial de ventas**: consulta de ventas por producto, con vistas paginadas y exportación a CSV.
+- **Anulación de facturas**: con reversión automática de stock.
+- **Inventario**: ajuste en línea de existencias, con vista previa de imágenes por URL.
+- **Recibos térmicos**: impresión en impresoras térmicas de 80mm, con cumplimiento tributario colombiano.
+- **Configuración del negocio**: panel de configuración almacenado en base de datos.
+- **Sincronización entre pestañas**: la sesión se mantiene sincronizada entre distintas pestañas del navegador.
+
+## 🏗️ Arquitectura y stack tecnológico
+
+| Componente | Tecnología |
+|---|---|
+| Frontend | Desplegado en [Vercel](https://vercel.com) |
+| Backend | Desplegado en [Railway](https://railway.app) |
+| Base de datos | [Supabase](https://supabase.com) (PostgreSQL) |
+| Control de versiones / CI | GitHub |
+
+> ℹ️ Ajusta esta tabla con los frameworks específicos que uses (por ejemplo React/Next.js, Node/Express, etc.) para que quede 100% precisa.
+
+## 🚀 Empezando
+
+### Requisitos previos
+
+- Node.js (versión recomendada: LTS)
+- Cuenta de [Supabase](https://supabase.com) con un proyecto configurado
+- Cuentas de [Railway](https://railway.app) y [Vercel](https://vercel.com) para despliegue
+
+### Instalación local (Windows / PowerShell)
+
+```powershell
+# Clonar el repositorio
+git clone https://github.com/<tu-usuario>/nixgelato.git
+cd nixgelato
+
+# Instalar dependencias
+npm install
+
+# Copiar variables de entorno de ejemplo
+copy .env.example .env
+```
+
+### Variables de entorno
+
+Configura las siguientes variables (ajusta nombres según tu proyecto):
+
+```
 SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+DATABASE_URL=
+```
 
-# Llave SERVICE_ROLE de Supabase (NO la anon)
-SUPABASE_SERVICE_ROLE=
+### Ejecutar en desarrollo
 
-##############################################
-# 🔑 AUTENTICACIÓN JWT
-##############################################
+```powershell
+npm run dev
+```
 
-# Clave secreta para firmar JWT
-JWT_SECRET=una_clave_segura_larga_y_unica
+## 📦 Despliegue
 
-##############################################
-# 🧂 CONFIGURACIÓN OPCIONAL
-##############################################
+- **Backend**: se despliega automáticamente en Railway a partir de la rama principal en GitHub.
+- **Frontend**: se despliega automáticamente en Vercel a partir de la rama principal en GitHub.
+- **Base de datos**: gestionada en Supabase (PostgreSQL en la nube).
 
-# Cantidad de rondas para bcrypt (default recomendado 10-12)
-BCRYPT_SALT_ROUNDS=10
+## 🗺️ Roadmap
 
-##############################################
-# 🌐 CORS PRODUCCIÓN
-##############################################
+- [ ] Arquitectura multi-tenant / white-label para comercializar el sistema a otros negocios similares
+- [ ] Ampliar el panel de configuración del negocio
 
-# Dominio del frontend en producción (ej: https://tu-app.vercel.app)
-FRONTEND_ORIGIN=https://nixgelato.vercel.app/
+## 👥 Autores
+
+- Elvis
+- Juan Hernandez
+
+## 📄 Licencia
+
+_Pendiente de definir._
