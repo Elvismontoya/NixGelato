@@ -44,8 +44,8 @@ Pensado inicialmente para el mercado colombiano, con soporte para cumplimiento t
 
 ```powershell
 # Clonar el repositorio
-git clone https://github.com/<tu-usuario>/nixgelato.git
-cd nixgelato
+git clone https://github.com/Elvismontoya/NixGelato.git
+cd NixGelato
 
 # Instalar dependencias
 npm install
