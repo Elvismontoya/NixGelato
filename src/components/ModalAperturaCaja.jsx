@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { abrirCaja } from "../api/caja.js";
 
 export default function ModalAperturaCaja({ onCajaAbierta, rol = "admin" }) {
+  const uid = useId();
   const [monto, setMonto] = useState("");
   const [obs, setObs] = useState("");
   const [msg, setMsg] = useState({ text: "", type: "" });
@@ -12,7 +13,7 @@ export default function ModalAperturaCaja({ onCajaAbierta, rol = "admin" }) {
   async function handleSubmit(e) {
     e.preventDefault();
     const montoNum = Number(monto);
-    if (isNaN(montoNum) || montoNum < 0) {
+    if (Number.isNaN(montoNum) || montoNum < 0) {
       setMsg({ text: "Ingresa un monto válido (puede ser 0)", type: "danger" });
       return;
     }
@@ -106,12 +107,16 @@ export default function ModalAperturaCaja({ onCajaAbierta, rol = "admin" }) {
 
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
-                <label className="form-label fw-semibold">
+                <label
+                  className="form-label fw-semibold"
+                  htmlFor={`${uid}-monto`}
+                >
                   Dinero en caja (COP) <span className="text-danger">*</span>
                 </label>
                 <div className="input-group input-group-lg">
                   <span className="input-group-text">$</span>
                   <input
+                    id={`${uid}-monto`}
                     type="number"
                     className="form-control"
                     min="0"
@@ -129,10 +134,11 @@ export default function ModalAperturaCaja({ onCajaAbierta, rol = "admin" }) {
               </div>
 
               <div className="mb-4">
-                <label className="form-label">
+                <label className="form-label" htmlFor={`${uid}-obs`}>
                   Observaciones <span className="text-muted">(opcional)</span>
                 </label>
                 <textarea
+                  id={`${uid}-obs`}
                   className="form-control"
                   rows={2}
                   value={obs}

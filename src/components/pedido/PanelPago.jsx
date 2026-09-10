@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { money } from "../../domain/money.js";
 import { billetesSugeridos, puedeCobrar } from "../../domain/pedido.js";
 
@@ -19,16 +20,21 @@ export default function PanelPago({
   cobrandoLoad,
   onCobrar,
 }) {
+  const uid = useId();
   const esEfectivo = metodoPago === "Efectivo";
   const hayItems = items.length > 0;
 
   return (
     <div className="px-4 py-3">
       <div className="mb-3">
-        <label className="form-label small fw-semibold">
+        <label
+          className="form-label small fw-semibold"
+          htmlFor={`${uid}-cliente`}
+        >
           👤 Cliente (opcional)
         </label>
         <input
+          id={`${uid}-cliente`}
           type="text"
           className="form-control form-control-sm"
           value={cliente}
@@ -38,9 +44,8 @@ export default function PanelPago({
       </div>
 
       <div className="mb-3">
-        <label className="form-label small fw-semibold">
-          💳 Método de pago
-        </label>
+        {/* Grupo de botones, no un control único: rótulo sin htmlFor. */}
+        <div className="form-label small fw-semibold">💳 Método de pago</div>
         <div className="d-flex gap-2 flex-wrap">
           {metodosPago.map((m) => (
             <button
@@ -61,10 +66,14 @@ export default function PanelPago({
 
       {esEfectivo && (
         <div className="mb-3">
-          <label className="form-label small fw-semibold">
+          <label
+            className="form-label small fw-semibold"
+            htmlFor={`${uid}-pago`}
+          >
             💰 Monto recibido
           </label>
           <input
+            id={`${uid}-pago`}
             type="number"
             className="form-control form-control-sm mb-2"
             value={pago || ""}

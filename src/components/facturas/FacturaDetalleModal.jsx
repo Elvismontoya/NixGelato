@@ -129,8 +129,8 @@ export default function FacturaDetalleModal({
                       </tr>
                     </thead>
                     <tbody>
-                      {(detalle.productos ?? []).map((p, i) => (
-                        <tr key={i}>
+                      {(detalle.productos ?? []).map((p) => (
+                        <tr key={p.id_detalle}>
                           <td>
                             {p.nombre_producto || `Producto #${p.id_producto}`}
                           </td>

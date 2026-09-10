@@ -1,3 +1,8 @@
+import { useId } from "react";
+
+// Claves estables para las filas de carga (evita usar el índice como key).
+const FILAS_CARGA = ["c1", "c2", "c3", "c4"];
+
 // Pestaña de gestión de categorías. Presentacional: el estado del formulario
 // y los handlers viven en el contenedor (Admin).
 export default function CategoriasTab({
@@ -13,6 +18,7 @@ export default function CategoriasTab({
   onStartEditar,
   onPedirEliminar,
 }) {
+  const uid = useId();
   const contarProductos = (idCat) =>
     productos.filter((p) => String(p.id_categoria) === String(idCat)).length;
 
@@ -30,8 +36,11 @@ export default function CategoriasTab({
               <input type="hidden" name="id" value={form.id} />
 
               <div className="mb-3">
-                <label className="form-label">Nombre de la categoría</label>
+                <label className="form-label" htmlFor={`${uid}-nombre`}>
+                  Nombre de la categoría
+                </label>
                 <input
+                  id={`${uid}-nombre`}
                   type="text"
                   className="form-control"
                   name="nombre"
@@ -43,8 +52,11 @@ export default function CategoriasTab({
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Descripción (opcional)</label>
+                <label className="form-label" htmlFor={`${uid}-descripcion`}>
+                  Descripción (opcional)
+                </label>
                 <textarea
+                  id={`${uid}-descripcion`}
                   className="form-control"
                   name="descripcion"
                   rows="3"
@@ -100,8 +112,8 @@ export default function CategoriasTab({
                 </thead>
                 <tbody className="stagger-children">
                   {loading ? (
-                    Array.from({ length: 4 }).map((_, i) => (
-                      <tr key={`skc-${i}`}>
+                    FILAS_CARGA.map((k) => (
+                      <tr key={k}>
                         <td colSpan={4}>
                           <div className="placeholder-wave">
                             <span className="placeholder col-12" />

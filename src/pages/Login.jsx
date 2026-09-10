@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   checkInitial,
@@ -15,6 +15,7 @@ function guardarSesionYEntrar(navigate, token, rol) {
 
 export default function Login() {
   const navigate = useNavigate();
+  const uid = useId();
 
   // pestañas: "login" | "register"
   const [tab, setTab] = useState("login");
@@ -211,7 +212,10 @@ export default function Login() {
                   {tab === "login" && (
                     <form onSubmit={onLoginSubmit} className="space-y-3">
                       <div className="mb-3">
-                        <label className="form-label fw-semibold">
+                        <label
+                          className="form-label fw-semibold"
+                          htmlFor={`${uid}-login-usuario`}
+                        >
                           Usuario
                         </label>
                         <div className="input-group input-group-lg">
@@ -219,6 +223,7 @@ export default function Login() {
                             👤
                           </span>
                           <input
+                            id={`${uid}-login-usuario`}
                             type="text"
                             className="form-control border-start-0 ps-1"
                             placeholder="Ingresa tu usuario"
@@ -231,7 +236,10 @@ export default function Login() {
                       </div>
 
                       <div className="mb-4">
-                        <label className="form-label fw-semibold">
+                        <label
+                          className="form-label fw-semibold"
+                          htmlFor={`${uid}-login-password`}
+                        >
                           Contraseña
                         </label>
                         <div className="input-group input-group-lg">
@@ -239,6 +247,7 @@ export default function Login() {
                             🔒
                           </span>
                           <input
+                            id={`${uid}-login-password`}
                             type={showPass ? "text" : "password"}
                             className="form-control border-start-0 ps-1"
                             placeholder="Ingresa tu contraseña"
@@ -309,10 +318,14 @@ export default function Login() {
 
                       <div className="row">
                         <div className="col-md-6 mb-3">
-                          <label className="form-label fw-semibold">
+                          <label
+                            className="form-label fw-semibold"
+                            htmlFor={`${uid}-reg-nombres`}
+                          >
                             Nombres
                           </label>
                           <input
+                            id={`${uid}-reg-nombres`}
                             className="form-control form-control-lg"
                             placeholder="Nombres"
                             value={regNombres}
@@ -321,10 +334,14 @@ export default function Login() {
                           />
                         </div>
                         <div className="col-md-6 mb-3">
-                          <label className="form-label fw-semibold">
+                          <label
+                            className="form-label fw-semibold"
+                            htmlFor={`${uid}-reg-apellidos`}
+                          >
                             Apellidos
                           </label>
                           <input
+                            id={`${uid}-reg-apellidos`}
                             className="form-control form-control-lg"
                             placeholder="Apellidos"
                             value={regApellidos}
@@ -335,10 +352,14 @@ export default function Login() {
                       </div>
 
                       <div className="mb-3">
-                        <label className="form-label fw-semibold">
+                        <label
+                          className="form-label fw-semibold"
+                          htmlFor={`${uid}-reg-usuario`}
+                        >
                           Usuario
                         </label>
                         <input
+                          id={`${uid}-reg-usuario`}
                           className="form-control form-control-lg"
                           placeholder="Nombre de usuario"
                           autoComplete="username"
@@ -349,11 +370,15 @@ export default function Login() {
                       </div>
 
                       <div className="mb-4">
-                        <label className="form-label fw-semibold">
+                        <label
+                          className="form-label fw-semibold"
+                          htmlFor={`${uid}-reg-password`}
+                        >
                           Contraseña
                         </label>
                         <div className="input-group input-group-lg">
                           <input
+                            id={`${uid}-reg-password`}
                             type={showRegPass ? "text" : "password"}
                             className="form-control"
                             placeholder="Contraseña segura"

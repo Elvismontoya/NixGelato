@@ -103,7 +103,7 @@ export default function DashboardTab({ dash, loading, onReload }) {
                   className="d-flex align-items-end gap-2"
                   style={{ height: 180 }}
                 >
-                  {dias.map((d, i) => {
+                  {dias.map((d) => {
                     const pct = Math.max(
                       (d.ingresos_totales / maxVal) * 100,
                       4,
@@ -112,7 +112,7 @@ export default function DashboardTab({ dash, loading, onReload }) {
                     const esHoy = d.fecha === hoyStr;
                     return (
                       <div
-                        key={i}
+                        key={d.fecha}
                         className="d-flex flex-column align-items-center flex-grow-1"
                         style={{ height: "100%" }}
                       >

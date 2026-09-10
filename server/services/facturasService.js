@@ -115,6 +115,7 @@ export function crearFacturasService({
     return {
       factura: mapFacturaResumen(factura),
       productos: lineas.map((p) => ({
+        id_detalle: p.id_detalle,
         id_producto: p.id_producto,
         nombre_producto: p.productos?.nombre_producto,
         cantidad: p.cantidad,

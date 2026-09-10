@@ -16,13 +16,13 @@ export function crearCajaService({ cajaRepo, auditoriaRepo, clock }) {
   }
 
   function historial(rawLimit) {
-    const limit = Math.min(parseInt(rawLimit ?? "60", 10) || 60, 200);
+    const limit = Math.min(Number.parseInt(rawLimit ?? "60", 10) || 60, 200);
     return cajaRepo.historial(limit);
   }
 
   async function abrir({ monto_apertura, observaciones }, actorId) {
     const monto = Number(monto_apertura);
-    if (isNaN(monto) || monto < 0) {
+    if (Number.isNaN(monto) || monto < 0) {
       throw ApiError.badRequest("El monto de apertura debe ser un número >= 0");
     }
 
@@ -61,7 +61,7 @@ export function crearCajaService({ cajaRepo, auditoriaRepo, clock }) {
   async function cerrar({ id_apertura, monto_cierre, observaciones }, actorId) {
     const montoCierre = Number(monto_cierre);
     if (!id_apertura) throw ApiError.badRequest("id_apertura es requerido");
-    if (isNaN(montoCierre) || montoCierre < 0) {
+    if (Number.isNaN(montoCierre) || montoCierre < 0) {
       throw ApiError.badRequest("El monto de cierre debe ser un número >= 0");
     }
 

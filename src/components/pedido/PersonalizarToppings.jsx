@@ -34,7 +34,7 @@ export default function PersonalizarToppings({
           ) : (
             <div className="row g-2">
               {toppings.map((t) => {
-                const activo = !!seleccionados.find(
+                const activo = seleccionados.some(
                   (s) => s.id_topping === t.id_topping,
                 );
                 return (

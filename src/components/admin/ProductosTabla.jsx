@@ -1,4 +1,8 @@
+import { useId } from "react";
 import { money } from "../../domain/money.js";
+
+// Claves estables para las filas de carga (evita usar el índice como key).
+const FILAS_CARGA = ["p1", "p2", "p3", "p4", "p5", "p6"];
 
 const IMG_FALLBACK =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIGZpbGw9IiNGOEY5RkEiLz48cGF0aCBkPSJNMjQgMzJMMjAgMjhIMTZMMTIgMzJMMTYgMzZIMjBMMjQgMzJaIiBmaWxsPSIjRDZENkQ2Ii8+PC9zdmc+";
@@ -27,6 +31,7 @@ export default function ProductosTabla({
   onEditar,
   onEliminar,
 }) {
+  const uid = useId();
   return (
     <div className="col-lg-8">
       <div className="card card-soft h-100">
@@ -34,8 +39,11 @@ export default function ProductosTabla({
           {/* Toolbar de filtros */}
           <div className="row g-2 align-items-end mb-3">
             <div className="col-12 col-md-4">
-              <label className="form-label">Buscar</label>
+              <label className="form-label" htmlFor={`${uid}-buscar`}>
+                Buscar
+              </label>
               <input
+                id={`${uid}-buscar`}
                 className="form-control"
                 placeholder="Nombre, categoría o ID…"
                 value={q}
@@ -43,8 +51,11 @@ export default function ProductosTabla({
               />
             </div>
             <div className="col-6 col-md-3">
-              <label className="form-label">Categoría</label>
+              <label className="form-label" htmlFor={`${uid}-cat`}>
+                Categoría
+              </label>
               <select
+                id={`${uid}-cat`}
                 className="form-select"
                 value={filterCat}
                 onChange={(e) => setFilterCat(e.target.value)}
@@ -58,8 +69,11 @@ export default function ProductosTabla({
               </select>
             </div>
             <div className="col-6 col-md-3">
-              <label className="form-label">Ordenar por</label>
+              <label className="form-label" htmlFor={`${uid}-sort`}>
+                Ordenar por
+              </label>
               <select
+                id={`${uid}-sort`}
                 className="form-select"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -110,8 +124,8 @@ export default function ProductosTabla({
               </thead>
               <tbody className="stagger-children">
                 {loading ? (
-                  Array.from({ length: 6 }).map((_, i) => (
-                    <tr key={`sk-${i}`}>
+                  FILAS_CARGA.map((k) => (
+                    <tr key={k}>
                       <td colSpan={6}>
                         <div className="placeholder-wave">
                           <span className="placeholder col-12" />

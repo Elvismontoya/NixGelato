@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminNavbar from "../components/AdminNavbar.jsx";
 import CajeroNavbar from "../components/CajeroNavbar.jsx";
@@ -17,9 +17,13 @@ import AnularVentaModal from "../components/facturas/AnularVentaModal.jsx";
 
 const POR_PAGINA = 20;
 
+// Claves estables para las filas de carga (evita usar el índice como key).
+const FILAS_CARGA = ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8"];
+
 export default function AdminFacturas() {
   const navigate = useNavigate();
   const { token, rol, logout } = useSession();
+  const uid = useId();
 
   const hoy = useMemo(() => new Date(), []);
   const treintaDias = useMemo(() => {
@@ -250,8 +254,11 @@ export default function AdminFacturas() {
             <h5 className="mb-3">Filtros</h5>
             <div className="row g-3">
               <div className="col-md-3">
-                <label className="form-label">Desde</label>
+                <label className="form-label" htmlFor={`${uid}-desde`}>
+                  Desde
+                </label>
                 <input
+                  id={`${uid}-desde`}
                   type="date"
                   className="form-control"
                   value={fechaDesde}
@@ -259,8 +266,11 @@ export default function AdminFacturas() {
                 />
               </div>
               <div className="col-md-3">
-                <label className="form-label">Hasta</label>
+                <label className="form-label" htmlFor={`${uid}-hasta`}>
+                  Hasta
+                </label>
                 <input
+                  id={`${uid}-hasta`}
                   type="date"
                   className="form-control"
                   value={fechaHasta}
@@ -269,8 +279,11 @@ export default function AdminFacturas() {
               </div>
               {rol === "admin" && (
                 <div className="col-md-3">
-                  <label className="form-label">Empleado</label>
+                  <label className="form-label" htmlFor={`${uid}-empleado`}>
+                    Empleado
+                  </label>
                   <select
+                    id={`${uid}-empleado`}
                     className="form-select"
                     value={idEmpleado}
                     onChange={(e) => setIdEmpleado(e.target.value)}
@@ -356,8 +369,8 @@ export default function AdminFacturas() {
                 </thead>
                 <tbody>
                   {cargando ? (
-                    Array.from({ length: 8 }).map((_, i) => (
-                      <tr key={i}>
+                    FILAS_CARGA.map((k) => (
+                      <tr key={k}>
                         <td colSpan={7}>
                           <div className="placeholder-wave">
                             <span className="placeholder col-12" />

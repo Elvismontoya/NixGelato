@@ -86,8 +86,8 @@ export default function Ticket({ venta, negocio }) {
           </tr>
         </thead>
         <tbody>
-          {items.map((item, i) => (
-            <tr key={i}>
+          {items.map((item) => (
+            <tr key={item.id}>
               <td>
                 {item.nombre}
                 {item.toppings?.length > 0 && (

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import AdminNavbar from "../components/AdminNavbar.jsx";
 import Footer from "../components/Footer.jsx";
 import { getIngresosPorDia } from "../api/facturas.js";
@@ -6,6 +6,9 @@ import { getAuditoria, getIngresosHoy } from "../api/auditoria.js";
 import { money } from "../domain/money.js";
 import useSession from "../hooks/useSession.js";
 import useAsync from "../hooks/useAsync.js";
+
+// Claves estables para las filas de carga (evita usar el índice como key).
+const FILAS_CARGA = ["a1", "a2", "a3", "a4", "a5", "a6"];
 
 const toYMD = (d) => {
   const y = d.getFullYear();
@@ -28,6 +31,7 @@ const ACCION_COLOR = {
 
 export default function AdminAuditoria() {
   const { logout } = useSession();
+  const uid = useId();
 
   const hoy = useMemo(() => new Date(), []);
   const sieteAtras = useMemo(() => {
@@ -219,8 +223,11 @@ export default function AdminAuditoria() {
             <h5 className="mb-3">📅 Filtro de ingresos por período</h5>
             <div className="row g-3">
               <div className="col-md-4">
-                <label className="form-label">Desde</label>
+                <label className="form-label" htmlFor={`${uid}-desde`}>
+                  Desde
+                </label>
                 <input
+                  id={`${uid}-desde`}
                   type="date"
                   className="form-control"
                   value={fechaDesde}
@@ -228,8 +235,11 @@ export default function AdminAuditoria() {
                 />
               </div>
               <div className="col-md-4">
-                <label className="form-label">Hasta</label>
+                <label className="form-label" htmlFor={`${uid}-hasta`}>
+                  Hasta
+                </label>
                 <input
+                  id={`${uid}-hasta`}
                   type="date"
                   className="form-control"
                   value={fechaHasta}
@@ -299,10 +309,10 @@ export default function AdminAuditoria() {
                       </td>
                     </tr>
                   ) : (
-                    ingresosDia.map((it, i) => {
+                    ingresosDia.map((it) => {
                       const fecha = parseYMD(it.fecha);
                       return (
-                        <tr key={i}>
+                        <tr key={it.fecha}>
                           <td className="fw-semibold">
                             {fecha
                               ? fecha.toLocaleDateString("es-CO", {
@@ -417,8 +427,8 @@ export default function AdminAuditoria() {
                 </thead>
                 <tbody>
                   {loadingAud ? (
-                    Array.from({ length: 6 }).map((_, i) => (
-                      <tr key={i}>
+                    FILAS_CARGA.map((k) => (
+                      <tr key={k}>
                         <td colSpan={5}>
                           <div className="placeholder-wave">
                             <span className="placeholder col-12" />

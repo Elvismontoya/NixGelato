@@ -197,7 +197,7 @@ export default function Pedido() {
 
   function toggleTopping(topping) {
     setToppingsSeleccionados((prev) => {
-      const existe = prev.find((t) => t.id_topping === topping.id_topping);
+      const existe = prev.some((t) => t.id_topping === topping.id_topping);
       return existe
         ? prev.filter((t) => t.id_topping !== topping.id_topping)
         : [...prev, topping];
@@ -372,6 +372,7 @@ export default function Pedido() {
         cliente,
         empleado: empleadoNombre,
         items: pedido.map((item) => ({
+          id: item.id,
           nombre: getProductoNombre(item.producto),
           cantidad: item.cantidad,
           subtotal: item.subtotal,

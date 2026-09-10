@@ -92,12 +92,12 @@ export default function Inventario() {
   }
 
   async function guardarEdicion(id) {
-    const stockActual = parseInt(formEdicion.stock_actual);
-    const stockMinimo = parseInt(formEdicion.stock_minimo);
+    const stockActual = Number.parseInt(formEdicion.stock_actual, 10);
+    const stockMinimo = Number.parseInt(formEdicion.stock_minimo, 10);
 
     if (
-      isNaN(stockActual) ||
-      isNaN(stockMinimo) ||
+      Number.isNaN(stockActual) ||
+      Number.isNaN(stockMinimo) ||
       stockActual < 0 ||
       stockMinimo < 0
     ) {

@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { money } from "../../domain/money.js";
 
 // Modal de confirmación para anular una venta. Presentacional.
@@ -10,6 +11,7 @@ export default function AnularVentaModal({
   onConfirm,
   onCancel,
 }) {
+  const motivoId = useId();
   if (!factura) return null;
 
   return (
@@ -61,10 +63,11 @@ export default function AnularVentaModal({
             </div>
 
             <div className="mb-3">
-              <label className="form-label fw-semibold">
+              <label className="form-label fw-semibold" htmlFor={motivoId}>
                 Motivo de anulación *
               </label>
               <textarea
+                id={motivoId}
                 className="form-control"
                 rows={3}
                 value={motivo}

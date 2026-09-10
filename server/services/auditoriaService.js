@@ -4,7 +4,7 @@ import { ApiError } from "../lib/ApiError.js";
 
 export function crearAuditoriaService({ auditoriaRepo, facturasRepo, clock }) {
   async function listar(rawLimit) {
-    const limit = Math.min(parseInt(rawLimit ?? "100", 10) || 100, 500);
+    const limit = Math.min(Number.parseInt(rawLimit ?? "100", 10) || 100, 500);
     const filas = await auditoriaRepo.list(limit);
     return filas.map((it) => ({
       id_auditoria: it.id_auditoria,

@@ -1,9 +1,8 @@
-import { useState, useMemo } from "react";
+import { useId, useState, useMemo } from "react";
 import AdminNavbar from "../components/AdminNavbar.jsx";
 import Footer from "../components/Footer.jsx";
 import ModalConfirmar from "../components/ModalConfirmar.jsx";
 import { useFormValidation } from "../hooks/useFormValidation.jsx";
-import FieldError from "../components/FieldError.jsx";
 import {
   getEmpleados,
   getRoles,
@@ -14,6 +13,9 @@ import {
 } from "../api/empleados.js";
 import useSession from "../hooks/useSession.js";
 import useAsync from "../hooks/useAsync.js";
+
+// Claves estables para las filas de carga (evita usar el índice como key).
+const FILAS_CARGA = ["e1", "e2", "e3", "e4"];
 
 const FORM_EMPTY = {
   id: "",
@@ -39,6 +41,7 @@ async function cargarEmpleadosYRoles() {
 
 export default function Empleados() {
   const { logout } = useSession();
+  const uid = useId();
 
   const {
     data,
@@ -311,11 +314,15 @@ export default function Empleados() {
                     },
                   ].map(({ name, label, type, required }) => (
                     <div className="mb-3" key={name}>
-                      <label className="form-label">
+                      <label
+                        className="form-label"
+                        htmlFor={`${uid}-emp-${name}`}
+                      >
                         {label}
                         {required && " *"}
                       </label>
                       <input
+                        id={`${uid}-emp-${name}`}
                         type={type}
                         className="form-control"
                         name={name}
@@ -329,8 +336,14 @@ export default function Empleados() {
 
                   {!editMode && (
                     <div className="mb-3">
-                      <label className="form-label">Contraseña *</label>
+                      <label
+                        className="form-label"
+                        htmlFor={`${uid}-emp-password`}
+                      >
+                        Contraseña *
+                      </label>
                       <input
+                        id={`${uid}-emp-password`}
                         type="password"
                         className="form-control"
                         name="password"
@@ -347,8 +360,11 @@ export default function Empleados() {
                   )}
 
                   <div className="mb-3">
-                    <label className="form-label">Rol *</label>
+                    <label className="form-label" htmlFor={`${uid}-emp-rol`}>
+                      Rol *
+                    </label>
                     <select
+                      id={`${uid}-emp-rol`}
                       className="form-select"
                       name="rol"
                       value={form.rol}
@@ -437,8 +453,8 @@ export default function Empleados() {
                     </thead>
                     <tbody>
                       {cargando ? (
-                        Array.from({ length: 4 }).map((_, i) => (
-                          <tr key={i}>
+                        FILAS_CARGA.map((k) => (
+                          <tr key={k}>
                             <td colSpan={4}>
                               <div className="placeholder-wave">
                                 <span className="placeholder col-12" />
@@ -533,8 +549,14 @@ export default function Empleados() {
                       Empleado: <strong>{passEmpNombre}</strong>
                     </p>
                     <div className="mb-3">
-                      <label className="form-label">Nueva contraseña</label>
+                      <label
+                        className="form-label"
+                        htmlFor={`${uid}-nueva-pass`}
+                      >
+                        Nueva contraseña
+                      </label>
                       <input
+                        id={`${uid}-nueva-pass`}
                         type="password"
                         className="form-control"
                         value={nuevaPass}

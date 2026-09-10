@@ -23,8 +23,8 @@ export function crearEmpleadosService({
   hasher,
 }) {
   async function listar({ page = 1, limit = 50, search = "" }) {
-    const p = Math.max(parseInt(page, 10) || 1, 1);
-    const l = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
+    const p = Math.max(Number.parseInt(page, 10) || 1, 1);
+    const l = Math.min(Math.max(Number.parseInt(limit, 10) || 50, 1), 100);
     const from = (p - 1) * l;
     const { rows, count } = await empleadosRepo.listActivePaged({
       from,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { getConfig, actualizarConfig } from "../../api/config.js";
 
 const CAMPOS = [
@@ -13,6 +13,7 @@ const CAMPOS = [
 
 // Pestaña de configuración del negocio. Carga y guarda /api/config.
 export default function NegocioTab() {
+  const uid = useId();
   const [form, setForm] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -79,8 +80,11 @@ export default function NegocioTab() {
             <form onSubmit={onSubmit}>
               {CAMPOS.map((c) => (
                 <div className="mb-3" key={c.name}>
-                  <label className="form-label">{c.label}</label>
+                  <label className="form-label" htmlFor={`${uid}-${c.name}`}>
+                    {c.label}
+                  </label>
                   <input
+                    id={`${uid}-${c.name}`}
                     type={c.type}
                     className="form-control"
                     name={c.name}

@@ -1,3 +1,4 @@
+import { useId } from "react";
 import FieldError from "../FieldError.jsx";
 
 // Formulario de alta/edición de producto. Presentacional.
@@ -12,6 +13,7 @@ export default function ProductoForm({
   categorias,
   onGestionarCategorias,
 }) {
+  const uid = useId();
   const onCampo = (campo) => (e) => {
     onChange(e);
     validacion.limpiarCampo(campo);
@@ -29,8 +31,11 @@ export default function ProductoForm({
             <input type="hidden" name="id" value={form.id} />
 
             <div className="mb-3">
-              <label className="form-label">Nombre del producto</label>
+              <label className="form-label" htmlFor={`${uid}-nombre`}>
+                Nombre del producto
+              </label>
               <input
+                id={`${uid}-nombre`}
                 type="text"
                 className={`form-control ${validacion.errores.nombre ? "is-invalid" : ""}`}
                 name="nombre"
@@ -42,8 +47,11 @@ export default function ProductoForm({
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Categoría</label>
+              <label className="form-label" htmlFor={`${uid}-categoria`}>
+                Categoría
+              </label>
               <select
+                id={`${uid}-categoria`}
                 className="form-select"
                 name="id_categoria"
                 value={form.id_categoria}
@@ -68,8 +76,11 @@ export default function ProductoForm({
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Precio base (COP)</label>
+              <label className="form-label" htmlFor={`${uid}-precio`}>
+                Precio base (COP)
+              </label>
               <input
+                id={`${uid}-precio`}
                 type="number"
                 className={`form-control ${validacion.errores.precio ? "is-invalid" : ""}`}
                 name="precio"
@@ -83,8 +94,11 @@ export default function ProductoForm({
             </div>
 
             <div className="mb-3">
-              <label className="form-label">IVA (%)</label>
+              <label className="form-label" htmlFor={`${uid}-tarifa_iva`}>
+                IVA (%)
+              </label>
               <input
+                id={`${uid}-tarifa_iva`}
                 type="number"
                 className="form-control"
                 name="tarifa_iva"
@@ -100,8 +114,11 @@ export default function ProductoForm({
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Stock inicial / actual</label>
+              <label className="form-label" htmlFor={`${uid}-stock`}>
+                Stock inicial / actual
+              </label>
               <input
+                id={`${uid}-stock`}
                 type="number"
                 className={`form-control ${validacion.errores.stock ? "is-invalid" : ""}`}
                 name="stock"
@@ -115,8 +132,11 @@ export default function ProductoForm({
             </div>
 
             <div className="mb-3">
-              <label className="form-label">URL Imagen</label>
+              <label className="form-label" htmlFor={`${uid}-img`}>
+                URL Imagen
+              </label>
               <input
+                id={`${uid}-img`}
                 type="url"
                 className="form-control"
                 name="img"
@@ -162,8 +182,11 @@ export default function ProductoForm({
             </div>
 
             <div className="mb-3">
-              <label className="form-label">¿Permite toppings?</label>
+              <label className="form-label" htmlFor={`${uid}-permiteToppings`}>
+                ¿Permite toppings?
+              </label>
               <select
+                id={`${uid}-permiteToppings`}
                 className="form-select"
                 name="permiteToppings"
                 value={form.permiteToppings}

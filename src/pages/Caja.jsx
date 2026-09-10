@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useId, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AdminNavbar from "../components/AdminNavbar.jsx";
 import Footer from "../components/Footer.jsx";
@@ -31,6 +31,7 @@ export default function Caja() {
   const { logout } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
+  const uid = useId();
   const cajaRequerida = location.state?.cajaRequerida === true;
 
   const {
@@ -63,7 +64,7 @@ export default function Caja() {
   async function registrarApertura(e) {
     e.preventDefault();
     const monto = Number(montoApertura);
-    if (isNaN(monto) || monto < 0) {
+    if (Number.isNaN(monto) || monto < 0) {
       setMsgApertura({
         text: "Ingresa un monto válido (puede ser 0)",
         type: "danger",
@@ -96,7 +97,7 @@ export default function Caja() {
   async function registrarCierre(e) {
     e.preventDefault();
     const monto = Number(montoCierre);
-    if (isNaN(monto) || monto < 0) {
+    if (Number.isNaN(monto) || monto < 0) {
       setMsgCierre({ text: "Ingresa un monto válido", type: "danger" });
       return;
     }
@@ -438,12 +439,16 @@ export default function Caja() {
                 ) : (
                   <form onSubmit={registrarApertura}>
                     <div className="mb-3">
-                      <label className="form-label fw-semibold">
+                      <label
+                        className="form-label fw-semibold"
+                        htmlFor={`${uid}-apertura-monto`}
+                      >
                         Dinero en caja (COP) *
                       </label>
                       <div className="input-group input-group-lg">
                         <span className="input-group-text">$</span>
                         <input
+                          id={`${uid}-apertura-monto`}
                           type="number"
                           className="form-control"
                           min="0"
@@ -459,10 +464,14 @@ export default function Caja() {
                       </div>
                     </div>
                     <div className="mb-3">
-                      <label className="form-label">
+                      <label
+                        className="form-label"
+                        htmlFor={`${uid}-apertura-obs`}
+                      >
                         Observaciones (opcional)
                       </label>
                       <textarea
+                        id={`${uid}-apertura-obs`}
                         className="form-control"
                         rows={2}
                         value={obsApertura}
@@ -526,12 +535,16 @@ export default function Caja() {
                       </div>
                     </div>
                     <div className="mb-3 mt-3">
-                      <label className="form-label fw-semibold">
+                      <label
+                        className="form-label fw-semibold"
+                        htmlFor={`${uid}-cierre-monto`}
+                      >
                         Dinero contado en caja (COP) *
                       </label>
                       <div className="input-group input-group-lg">
                         <span className="input-group-text">$</span>
                         <input
+                          id={`${uid}-cierre-monto`}
                           type="number"
                           className="form-control"
                           min="0"
@@ -544,10 +557,14 @@ export default function Caja() {
                       </div>
                     </div>
                     <div className="mb-3">
-                      <label className="form-label">
+                      <label
+                        className="form-label"
+                        htmlFor={`${uid}-cierre-obs`}
+                      >
                         Observaciones (opcional)
                       </label>
                       <textarea
+                        id={`${uid}-cierre-obs`}
                         className="form-control"
                         rows={2}
                         value={obsCierre}
