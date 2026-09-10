@@ -1,15 +1,16 @@
 -- ============================================================
--- ESQUEMA BASE (v1) — pendiente de capturar
+-- ESQUEMA BASE (v1) — placeholder
 -- ============================================================
 -- El esquema inicial (tablas roles, empleados, categorias, productos,
 -- inventario, toppings, metodos_pago, facturas, productos_facturas,
--- facturas_pagos, aperturas_caja, auditoria + secuencias/constraints)
--- se creó a mano en el editor SQL de Supabase antes de adoptar migraciones,
--- así que NO está versionado aquí todavía.
+-- facturas_pagos, aperturas_caja, auditoria) se creó a mano en el editor SQL
+-- de Supabase antes de adoptar migraciones, así que no existe como migración.
 --
--- Para capturarlo desde el proyecto remoto:
---   supabase link --project-ref xgefpxqgfcdyuigzumpo
---   supabase db pull            # genera este archivo con el DDL real
+-- El esquema COMPLETO y al día (base v1 + v2..v10) está en:
+--   supabase/schema.sql
 --
--- Hasta entonces, un entorno nuevo debe crear el esquema base por otra vía;
--- las migraciones v2..v8 asumen que estas tablas ya existen.
+-- Para levantar una instancia nueva NO se aplican estas migraciones una por
+-- una: se ejecuta supabase/schema.sql + supabase/seed.sql. Ver PROVISIONING.md.
+--
+-- Las migraciones v2..v10 de esta carpeta son solo el historial del proyecto
+-- original y asumen que las tablas base ya existen.

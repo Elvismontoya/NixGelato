@@ -1,14 +1,29 @@
 # Base de datos (Supabase)
 
-Proyecto: `xgefpxqgfcdyuigzumpo`
+Proyecto (producción): `xgefpxqgfcdyuigzumpo`
 
-## Migraciones
+## Archivos
+
+| Archivo | Para qué |
+|---|---|
+| `schema.sql` | **Esquema completo** (base v1 + v2…v10 ya aplicadas). Se ejecuta una sola vez para levantar una instancia nueva desde cero. |
+| `seed.sql` | Datos mínimos de una instancia nueva: roles, métodos de pago, fila de `configuracion_negocio`. |
+| `PROVISIONING.md` | Guía paso a paso para montar NixGelato para **otro negocio** (Supabase + backend + frontend). |
+| `migrations/*.sql` | Historial versionado de cambios del proyecto original. Una instancia nueva **no** los necesita (ya están en `schema.sql`). |
+
+## Levantar otro negocio
+
+Ver `PROVISIONING.md`. Resumen: proyecto Supabase nuevo → `schema.sql` → `seed.sql`
+→ backend Railway con su `.env` → frontend Vercel con `VITE_API_URL` → crear el
+primer admin desde la pantalla "Configuración inicial" de la app.
+
+## Migraciones (historial del proyecto original)
 
 `supabase/migrations/*.sql` — historial versionado, en orden por timestamp:
 
 | Archivo | Contenido |
 |---|---|
-| `00000000000000_base_schema.sql` | Esquema base v1 — **pendiente de capturar** (`supabase db pull`) |
+| `00000000000000_base_schema.sql` | Placeholder del esquema base v1 (nunca se versionó como migración; capturado en `../schema.sql`) |
 | `…_v2_anular_ventas_multicaja.sql` | Columnas de anulación en `facturas`, `revertir_stock`, `existe_apertura_hoy`, índice multi-caja |
 | `…_v3_registrar_venta_integridad_precios.sql` | Columna `productos_facturas.toppings` + RPC transaccional `registrar_venta` |
 | `…_v4_caja_compartida_una_por_dia.sql` | Índice único parcial "una caja abierta por día" |
