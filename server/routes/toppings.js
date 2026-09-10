@@ -1,29 +1,14 @@
-// server/routes/toppings.js
-import express from "express"
-import { supabaseAdmin } from "../db/supabase.js"
-import { verifyToken } from "../authMiddleware.js"
+// Capa HTTP de toppings.
+import express from 'express'
+import { asyncHandler } from '../lib/asyncHandler.js'
+import { verifyToken } from '../middleware/auth.js'
+import { toppingsService } from '../container.js'
 
 const router = express.Router()
 
-// GET /api/toppings - listar toppings activos ordenados por nombre
-router.get("/", verifyToken, async (_req, res) => {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from("toppings")
-      .select("id_topping, nombre_topping, precio, activo")
-      .eq("activo", true)
-      .order("nombre_topping", { ascending: true }) // ✅ nombre correcto
-
-    if (error) {
-      console.error("Error consultando toppings:", error)
-      return res.status(500).json({ message: "Error al obtener toppings" })
-    }
-
-    res.json(data ?? [])
-  } catch (err) {
-    console.error("Error en /api/toppings:", err)
-    res.status(500).json({ message: "Error interno del servidor" })
-  }
-})
+// GET /api/toppings — listar toppings activos ordenados por nombre
+router.get('/', verifyToken, asyncHandler(async (_req, res) => {
+  res.json(await toppingsService.listar())
+}))
 
 export default router

@@ -1,6 +1,5 @@
 import { useState } from 'react'
-
-const getToken = () => localStorage.getItem('token') || ''
+import { abrirCaja } from '../api/caja.js'
 
 export default function ModalAperturaCaja({ onCajaAbierta, rol = 'admin' }) {
   const [monto,   setMonto]   = useState('')
@@ -22,31 +21,17 @@ export default function ModalAperturaCaja({ onCajaAbierta, rol = 'admin' }) {
     setMsg({ text: 'Registrando apertura...', type: 'muted' })
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/caja/apertura`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({ monto_apertura: montoNum, observaciones: obs }),
-      })
-      const data = await res.json().catch(() => ({}))
-
-      if (!res.ok) {
-        // 409 = ya existe apertura hoy (otro usuario la abrió), dejar pasar
-        if (res.status === 409) {
-          onCajaAbierta()
-          return
-        }
-        setMsg({ text: data.message || 'Error al registrar apertura', type: 'danger' })
-        return
-      }
-
+      await abrirCaja({ monto_apertura: montoNum, observaciones: obs })
       setMsg({ text: '✅ Caja abierta. ¡Buen día!', type: 'success' })
       setTimeout(() => onCajaAbierta(), 900)
     } catch (err) {
+      // 409 = ya existe apertura hoy (otro usuario la abrió), dejar pasar
+      if (err.status === 409) {
+        onCajaAbierta()
+        return
+      }
       console.error(err)
-      setMsg({ text: 'Error al conectar con el servidor', type: 'danger' })
+      setMsg({ text: err.message || 'Error al registrar apertura', type: 'danger' })
     } finally {
       setLoading(false)
     }
@@ -69,14 +54,17 @@ export default function ModalAperturaCaja({ onCajaAbierta, rol = 'admin' }) {
       }}>
         <div
           className="card border-0 shadow-lg"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-apertura-titulo"
           style={{ width: '100%', maxWidth: '440px', borderRadius: '1.25rem' }}
         >
           <div className="card-body p-4">
 
             {/* Header */}
             <div className="text-center mb-4">
-              <div style={{ fontSize: '2.5rem' }}>💰</div>
-              <h4 className="fw-bold mb-1 mt-2">Apertura de caja</h4>
+              <div style={{ fontSize: '2.5rem' }} aria-hidden="true">💰</div>
+              <h4 className="fw-bold mb-1 mt-2" id="modal-apertura-titulo">Apertura de caja</h4>
               <p className="text-muted small mb-0">
                 {esAdmin
                   ? 'Ingresa el dinero disponible en caja para comenzar el día.'

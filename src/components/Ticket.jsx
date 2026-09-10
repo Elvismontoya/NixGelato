@@ -1,38 +1,39 @@
 // Solo es visible al imprimir (@media print) — en pantalla se oculta.
 // Cumple con datos mínimos de documento equivalente (régimen responsable de IVA).
+import { money } from "../domain/money.js";
+import { desglosarVenta, IVA_PORCENTAJE } from "../domain/ticket.js";
 
-const money = (n) =>
-  Number(n || 0).toLocaleString("es-CO", { style: "currency", currency: "COP" });
-
-// ── Datos del negocio ────────────────────────────────────
-const NEGOCIO = {
+// Valores por defecto si aún no se cargó la config del negocio.
+const NEGOCIO_DEFAULT = {
   nombre:     "NixGelato",
-  nit:        "123.456.789-0",
-  direccion:  "Cll 1 #1-2",
-  telefono:   "310 000 0000",
+  nit:        "",
+  direccion:  "",
+  telefono:   "",
   regimen:    "Responsable de IVA",
+  iva_porcentaje: IVA_PORCENTAJE,
+  pie_ticket: "¡Gracias por tu compra!",
 };
 
-const IVA_PORCENTAJE = 19; // % - tarifa general Colombia
-
-export default function Ticket({ venta }) {
+export default function Ticket({ venta, negocio }) {
   if (!venta) return null
 
+  const N = { ...NEGOCIO_DEFAULT, ...(negocio || venta.negocio || {}) }
   const { id_factura, fecha, cliente, empleado, items, total, metodoPago, pago, cambio } = venta
 
-  // El total incluye IVA. Desglosamos: base = total / 1.19
-  const baseGravable = total / (1 + IVA_PORCENTAJE / 100)
-  const valorIva     = total - baseGravable
+  const tarifaConfig = Number(N.iva_porcentaje) || IVA_PORCENTAJE
+  const { base: baseGravable, iva: valorIva, tarifa } = desglosarVenta(venta, tarifaConfig)
+  // `tarifa` viene null cuando el IVA se calculó por producto (posiblemente varias tarifas).
+  const etiquetaIva = tarifa == null ? "IVA" : `IVA (${tarifa}%)`
 
   return (
     <div className="ticket-print">
       <div className="ticket-header">
         <div className="ticket-logo">🍨</div>
-        <h2>{NEGOCIO.nombre}</h2>
-        <p className="ticket-sub">NIT: {NEGOCIO.nit}</p>
-        <p className="ticket-sub">{NEGOCIO.direccion}</p>
-        <p className="ticket-sub">Tel: {NEGOCIO.telefono}</p>
-        <p className="ticket-sub ticket-regimen">{NEGOCIO.regimen}</p>
+        <h2>{N.nombre}</h2>
+        {N.nit && <p className="ticket-sub">NIT: {N.nit}</p>}
+        {N.direccion && <p className="ticket-sub">{N.direccion}</p>}
+        {N.telefono && <p className="ticket-sub">Tel: {N.telefono}</p>}
+        {N.regimen && <p className="ticket-sub ticket-regimen">{N.regimen}</p>}
       </div>
 
       <div className="ticket-divider" />
@@ -84,7 +85,7 @@ export default function Ticket({ venta }) {
           <span>{money(baseGravable)}</span>
         </div>
         <div className="ticket-total-row">
-          <span>IVA ({IVA_PORCENTAJE}%)</span>
+          <span>{etiquetaIva}</span>
           <span>{money(valorIva)}</span>
         </div>
         <div className="ticket-total-row ticket-total-grand">
@@ -119,7 +120,7 @@ export default function Ticket({ venta }) {
       <div className="ticket-divider" />
 
       <div className="ticket-footer">
-        <p>¡Gracias por tu compra!</p>
+        <p>{N.pie_ticket}</p>
         <p>Vuelve pronto 🍦</p>
       </div>
 

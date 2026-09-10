@@ -1,20 +1,37 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import AdminNavbar from '../components/AdminNavbar.jsx'
 import Footer from '../components/Footer.jsx'
+import { getEstadoCaja, getEstadoTodasCajas, getHistorialCaja, abrirCaja, cerrarCaja } from '../api/caja.js'
+import { money } from "../domain/money.js";
+import useSession from "../hooks/useSession.js";
+import useAsync from "../hooks/useAsync.js";
 
-const getToken = () => localStorage.getItem('token') || ''
-const money = (n) => Number(n || 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP' })
+// El estado del día, el historial y las cajas de hoy siempre se piden juntos.
+async function cargarDatosCaja() {
+  const [est, hist, todas] = await Promise.all([
+    getEstadoCaja(),
+    getHistorialCaja({ limit: 30 }).catch(() => []),
+    getEstadoTodasCajas().catch(() => []),
+  ])
+  return {
+    estadoCaja: est?.apertura ?? null,
+    historial: Array.isArray(hist) ? hist : [],
+    cajasHoy: Array.isArray(todas?.cajas) ? todas.cajas : [],
+  }
+}
 
 export default function Caja() {
+  const { logout } = useSession();
   const navigate  = useNavigate()
   const location  = useLocation()
   const cajaRequerida = location.state?.cajaRequerida === true
 
-  const [estadoCaja,   setEstadoCaja]   = useState(null)   // apertura del día
-  const [historial,    setHistorial]    = useState([])
-  const [cargando,     setCargando]     = useState(true)
-  const [errorGlobal,  setErrorGlobal]  = useState('')
+  const { data, loading: cargando, error, run: recargar } = useAsync(cargarDatosCaja)
+  const estadoCaja = useMemo(() => data?.estadoCaja ?? null, [data])
+  const historial  = useMemo(() => data?.historial ?? [], [data])
+  const cajasHoy   = useMemo(() => data?.cajasHoy ?? [], [data])
+  const errorGlobal = error ? 'Error al cargar el estado de la caja. Verifica tu conexión.' : ''
 
   // Apertura form
   const [montoApertura, setMontoApertura]   = useState('')
@@ -28,67 +45,6 @@ export default function Caja() {
   const [msgCierre,   setMsgCierre]     = useState({ text: '', type: 'muted' })
   const [loadCierre,  setLoadCierre]    = useState(false)
   const [resumenCierre, setResumenCierre] = useState(null)
-  const [cajasHoy, setCajasHoy] = useState([])
-
-  function logout() {
-    localStorage.removeItem('token')
-    localStorage.removeItem('rol')
-    navigate('/login', { replace: true })
-  }
-
-  // ── Cargar estado del día ────────────────────────────────
-  async function cargarEstado() {
-    try {
-      setCargando(true)
-      setErrorGlobal('')
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/caja/estado`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      })
-      if (res.status === 401 || res.status === 403) { logout(); return }
-      if (!res.ok) throw new Error('Error consultando caja')
-      const data = await res.json()
-      setEstadoCaja(data.apertura)
-    } catch (err) {
-      console.error(err)
-      setErrorGlobal('Error al cargar el estado de la caja. Verifica tu conexión.')
-    } finally {
-      setCargando(false)
-    }
-  }
-
-  async function cargarHistorial() {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/caja/historial?limit=30`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setHistorial(Array.isArray(data) ? data : [])
-      }
-    } catch (err) {
-      console.error('Historial:', err)
-    }
-  }
-
-  async function cargarCajasHoy() {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/caja/estado-todas`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setCajasHoy(Array.isArray(data.cajas) ? data.cajas : [])
-      }
-    } catch (err) {
-      console.error('Cajas de hoy:', err)
-    }
-  }
-
-  useEffect(() => {
-    cargarEstado()
-    cargarHistorial()
-    cargarCajasHoy()
-  }, [])
 
   // ── Apertura ─────────────────────────────────────────────
   async function registrarApertura(e) {
@@ -101,25 +57,14 @@ export default function Caja() {
     setLoadApertura(true)
     setMsgApertura({ text: 'Registrando apertura...', type: 'muted' })
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/caja/apertura`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ monto_apertura: monto, observaciones: obsApertura }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setMsgApertura({ text: data.message || 'Error registrando apertura', type: 'danger' })
-        return
-      }
+      await abrirCaja({ monto_apertura: monto, observaciones: obsApertura })
       setMsgApertura({ text: '✅ Caja abierta correctamente', type: 'success' })
       setMontoApertura('')
       setObsApertura('')
-      await cargarEstado()
-      await cargarHistorial()
-      await cargarCajasHoy()
+      await recargar()
     } catch (err) {
       console.error(err)
-      setMsgApertura({ text: 'Error al conectar con el servidor', type: 'danger' })
+      setMsgApertura({ text: err.message || 'Error registrando apertura', type: 'danger' })
     } finally {
       setLoadApertura(false)
     }
@@ -141,30 +86,19 @@ export default function Caja() {
     setMsgCierre({ text: 'Procesando cierre...', type: 'muted' })
     setResumenCierre(null)
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/caja/cierre`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({
-          id_apertura: estadoCaja.id_apertura,
-          monto_cierre: monto,
-          observaciones: obsCierre,
-        }),
+      const data = await cerrarCaja({
+        id_apertura: estadoCaja.id_apertura,
+        monto_cierre: monto,
+        observaciones: obsCierre,
       })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setMsgCierre({ text: data.message || 'Error registrando cierre', type: 'danger' })
-        return
-      }
       setMsgCierre({ text: '✅ Caja cerrada correctamente', type: 'success' })
-      setResumenCierre(data.resumen)
+      setResumenCierre(data?.resumen ?? null)
       setMontoCierre('')
       setObsCierre('')
-      await cargarEstado()
-      await cargarHistorial()
-      await cargarCajasHoy()
+      await recargar()
     } catch (err) {
       console.error(err)
-      setMsgCierre({ text: 'Error al conectar con el servidor', type: 'danger' })
+      setMsgCierre({ text: err.message || 'Error registrando cierre', type: 'danger' })
     } finally {
       setLoadCierre(false)
     }
@@ -207,6 +141,16 @@ export default function Caja() {
           <p className="lead mb-0">Registra el dinero inicial del día y cierra la caja al terminar.</p>
         </section>
 
+        {errorGlobal && (
+          <div className="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert">
+            <span>⚠️</span>
+            <div className="flex-grow-1">{errorGlobal}</div>
+            <button className="btn btn-sm btn-outline-danger" onClick={recargar}>
+              Reintentar
+            </button>
+          </div>
+        )}
+
         {/* Aviso obligatorio */}
         {cajaRequerida && sinApertura && (
           <div className="alert alert-warning d-flex align-items-center gap-3 mb-4" role="alert">
@@ -240,7 +184,7 @@ export default function Caja() {
               <h5 className="mb-0">Estado de caja — hoy</h5>
               <div className="d-flex gap-2 align-items-center">
                 {estadoBadge ?? <span className="badge bg-warning text-dark fs-6">⚪ Sin apertura</span>}
-                <button className="btn btn-sm btn-outline-secondary" onClick={() => { cargarEstado(); cargarHistorial(); cargarCajasHoy() }}>
+                <button className="btn btn-sm btn-outline-secondary" onClick={recargar}>
                   🔄
                 </button>
               </div>

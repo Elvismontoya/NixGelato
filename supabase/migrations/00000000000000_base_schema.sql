@@ -1,0 +1,15 @@
+-- ============================================================
+-- ESQUEMA BASE (v1) — pendiente de capturar
+-- ============================================================
+-- El esquema inicial (tablas roles, empleados, categorias, productos,
+-- inventario, toppings, metodos_pago, facturas, productos_facturas,
+-- facturas_pagos, aperturas_caja, auditoria + secuencias/constraints)
+-- se creó a mano en el editor SQL de Supabase antes de adoptar migraciones,
+-- así que NO está versionado aquí todavía.
+--
+-- Para capturarlo desde el proyecto remoto:
+--   supabase link --project-ref xgefpxqgfcdyuigzumpo
+--   supabase db pull            # genera este archivo con el DDL real
+--
+-- Hasta entonces, un entorno nuevo debe crear el esquema base por otra vía;
+-- las migraciones v2..v8 asumen que estas tablas ya existen.

@@ -1,24 +1,37 @@
-import { useEffect, useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useMemo } from 'react'
 import AdminNavbar from '../components/AdminNavbar.jsx'
 import Footer from '../components/Footer.jsx'
 import ModalConfirmar from '../components/ModalConfirmar.jsx'
-import { useFormValidation, FieldError } from '../hooks/useFormValidation.jsx'
-
-const getToken = () => localStorage.getItem('token') || ''
+import { useFormValidation } from '../hooks/useFormValidation.jsx'
+import FieldError from '../components/FieldError.jsx'
+import { getEmpleados, getRoles, crearEmpleado, actualizarEmpleado, cambiarPassword as apiCambiarPassword, desactivarEmpleado } from '../api/empleados.js'
+import useSession from "../hooks/useSession.js";
+import useAsync from "../hooks/useAsync.js";
 
 const FORM_EMPTY = {
   id: '', nombres: '', apellidos: '', documento: '',
   telefono: '', usuario: '', password: '', rol: 'cajero',
 }
 
-export default function Empleados() {
-  const navigate = useNavigate()
+async function cargarEmpleadosYRoles() {
+  const [emp, rolesData] = await Promise.all([
+    getEmpleados({ limit: 100 }),
+    getRoles().catch(() => []),
+  ])
+  return {
+    empleados: Array.isArray(emp?.data) ? emp.data : [],
+    roles: Array.isArray(rolesData) ? rolesData : [],
+  }
+}
 
-  const [empleados, setEmpleados] = useState([])
-  const [roles,     setRoles]     = useState([])
-  const [cargando,  setCargando]  = useState(true)
-  const [search,    setSearch]    = useState('')
+export default function Empleados() {
+  const { logout } = useSession();
+
+  const { data, loading: cargando, run: cargarEmpleados } = useAsync(cargarEmpleadosYRoles)
+  const empleados = useMemo(() => data?.empleados ?? [], [data])
+  const roles = useMemo(() => data?.roles ?? [], [data])
+
+  const [search, setSearch] = useState('')
 
   const [form,    setForm]    = useState(FORM_EMPTY)
   const [msg,     setMsg]     = useState({ text: '', type: 'muted' })
@@ -45,57 +58,12 @@ export default function Empleados() {
       validate: (v, vals) => {
         if (vals._editMode) return true // en edición no es obligatoria
         if (!v || !v.trim()) return 'La contraseña es obligatoria'
-        if (v.trim().length < 6) return 'Mínimo 6 caracteres'
+        if (v.trim().length < 8) return 'Mínimo 8 caracteres'
+        if (!/[A-Za-z]/.test(v) || !/[0-9]/.test(v)) return 'Debe incluir letras y números'
         return true
       }
     },
   })
-
-  function logout() {
-    localStorage.removeItem('token')
-    localStorage.removeItem('rol')
-    navigate('/login', { replace: true })
-  }
-
-  // ── Cargar datos ─────────────────────────────────────────
-  async function cargarEmpleados() {
-    try {
-      setCargando(true)
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/empleados?limit=100`,
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      )
-      if (res.status === 401 || res.status === 403) { logout(); return }
-      if (!res.ok) throw new Error('Error cargando empleados')
-      const data = await res.json()
-      setEmpleados(Array.isArray(data.data) ? data.data : [])
-    } catch (err) {
-      console.error(err)
-      setMsg({ text: 'Error cargando empleados', type: 'danger' })
-    } finally {
-      setCargando(false)
-    }
-  }
-
-  async function cargarRoles() {
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/empleados/roles/lista`,
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      )
-      if (res.ok) {
-        const data = await res.json()
-        setRoles(Array.isArray(data) ? data : [])
-      }
-    } catch (err) {
-      console.error('Roles:', err)
-    }
-  }
-
-  useEffect(() => {
-    cargarEmpleados()
-    cargarRoles()
-  }, [])
 
   // ── Filtro ────────────────────────────────────────────────
   const empleadosFiltrados = useMemo(() => {
@@ -154,27 +122,17 @@ export default function Empleados() {
     if (!valido) { setLoading(false); setMsg({ text: '', type: '' }); return }
 
     try {
-      const url    = editMode
-        ? `${import.meta.env.VITE_API_URL}/api/empleados/${form.id}`
-        : `${import.meta.env.VITE_API_URL}/api/empleados`
-      const method = editMode ? 'PUT' : 'POST'
-
-      const res  = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify(body),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setMsg({ text: data.message || 'Error al guardar', type: 'danger' })
-        return
+      if (editMode) {
+        await actualizarEmpleado(form.id, body)
+      } else {
+        await crearEmpleado(body)
       }
       setMsg({ text: editMode ? 'Empleado actualizado' : 'Empleado creado correctamente', type: 'success' })
       resetForm()
       await cargarEmpleados()
     } catch (err) {
       console.error(err)
-      setMsg({ text: 'Error al conectar con el servidor', type: 'danger' })
+      setMsg({ text: err.message || 'Error al guardar', type: 'danger' })
     } finally {
       setLoading(false)
     }
@@ -195,17 +153,12 @@ export default function Empleados() {
   async function desactivar(id) {
     setLoadingDesactivar(true)
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/empleados/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${getToken()}` },
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setMsg({ text: data.message || 'Error al desactivar', type: 'danger' }); return }
+      await desactivarEmpleado(id)
       setModalDesactivar(null)
       await cargarEmpleados()
     } catch (err) {
       console.error(err)
-      setMsg({ text: 'Error al conectar con el servidor', type: 'danger' })
+      setMsg({ text: err.message || 'Error al desactivar', type: 'danger' })
     } finally {
       setLoadingDesactivar(false)
     }
@@ -222,28 +175,20 @@ export default function Empleados() {
 
   async function cambiarPassword(e) {
     e.preventDefault()
-    if (!nuevaPass.trim() || nuevaPass.trim().length < 6) {
-      setPassMsg({ text: 'La contraseña debe tener al menos 6 caracteres', type: 'danger' })
+    const p = nuevaPass.trim()
+    if (p.length < 8 || !/[A-Za-z]/.test(p) || !/[0-9]/.test(p)) {
+      setPassMsg({ text: 'Mínimo 8 caracteres, con letras y números', type: 'danger' })
       return
     }
     setPassLoading(true)
     setPassMsg({ text: 'Guardando...', type: 'muted' })
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/empleados/${passEmpId}/password`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
-          body: JSON.stringify({ password: nuevaPass.trim() }),
-        }
-      )
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) { setPassMsg({ text: data.message || 'Error al cambiar contraseña', type: 'danger' }); return }
+      await apiCambiarPassword(passEmpId, p)
       setPassMsg({ text: 'Contraseña actualizada correctamente', type: 'success' })
       setTimeout(() => setShowPassModal(false), 1200)
     } catch (err) {
       console.error(err)
-      setPassMsg({ text: 'Error al conectar con el servidor', type: 'danger' })
+      setPassMsg({ text: err.message || 'Error al cambiar contraseña', type: 'danger' })
     } finally {
       setPassLoading(false)
     }
@@ -314,9 +259,9 @@ export default function Empleados() {
                         onChange={onChange}
                         required
                         autoComplete="new-password"
-                        minLength={6}
+                        minLength={8}
                       />
-                      <div className="form-text">Mínimo 6 caracteres</div>
+                      <div className="form-text">Mínimo 8 caracteres, con letras y números</div>
                     </div>
                   )}
 
@@ -456,12 +401,12 @@ export default function Empleados() {
                         className="form-control"
                         value={nuevaPass}
                         onChange={(e) => setNuevaPass(e.target.value)}
-                        minLength={6}
+                        minLength={8}
                         required
                         autoFocus
                         autoComplete="new-password"
                       />
-                      <div className="form-text">Mínimo 6 caracteres</div>
+                      <div className="form-text">Mínimo 8 caracteres, con letras y números</div>
                     </div>
                     {passMsg.text && (
                       <div className={`alert alert-${passMsg.type === 'danger' ? 'danger' : passMsg.type === 'success' ? 'success' : 'secondary'} py-2 mb-0`}>

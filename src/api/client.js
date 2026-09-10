@@ -3,6 +3,13 @@
 
 const BASE = import.meta.env.VITE_API_URL || ''
 
+// Acepta tanto rutas relativas ('/api/...') como URLs absolutas ya
+// construidas con VITE_API_URL, evitando duplicar el host.
+function buildUrl(path) {
+  if (/^https?:\/\//i.test(path)) return path
+  return `${BASE}${path}`
+}
+
 function getToken() {
   return localStorage.getItem('token') || ''
 }
@@ -27,20 +34,24 @@ export async function apiFetch(path, { method = 'GET', body, headers = {} } = {}
 
   let res
   try {
-    res = await fetch(`${BASE}${path}`, opts)
+    res = await fetch(buildUrl(path), opts)
   } catch {
     throw new Error('Sin conexión con el servidor. Verifica tu red.')
   }
 
-  // Token expirado o inválido → logout automático
-  if (res.status === 401 || res.status === 403) {
+  // 401 = sesión expirada/ inválida → logout automático.
+  if (res.status === 401) {
     forceLogout()
     throw new Error('Sesión expirada. Inicia sesión nuevamente.')
   }
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
-    throw new Error(data.message || `Error ${res.status}`)
+    // 403 = permisos insuficientes: se informa, NO se cierra sesión.
+    const err = new Error(data.message || `Error ${res.status}`)
+    err.status = res.status
+    err.body = data
+    throw err
   }
 
   return res.json().catch(() => null)
@@ -52,3 +63,13 @@ export const apiPost   = (path, body)   => apiFetch(path, { method: 'POST',   bo
 export const apiPut    = (path, body)   => apiFetch(path, { method: 'PUT',    body })
 export const apiPatch  = (path, body)   => apiFetch(path, { method: 'PATCH',  body })
 export const apiDelete = (path)         => apiFetch(path, { method: 'DELETE' })
+
+// Serializa un objeto a query string ('?a=1&b=2'); ignora null/undefined/''.
+export function buildQuery(params = {}) {
+  const q = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null && v !== '') q.append(k, v)
+  }
+  const s = q.toString()
+  return s ? `?${s}` : ''
+}

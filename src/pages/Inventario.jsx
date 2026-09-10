@@ -2,17 +2,30 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminNavbar from "../components/AdminNavbar.jsx";
 import Footer from "../components/Footer.jsx";
+import { getInventario, getAlertasStock, ajustarStock as apiAjustarStock } from "../api/inventario.js";
+import { money } from "../domain/money.js";
+import useSession from "../hooks/useSession.js";
+import useAsync from "../hooks/useAsync.js";
 
-const money = (n) =>
-  Number(n || 0).toLocaleString("es-CO", { style: "currency", currency: "COP" });
-const getToken = () => localStorage.getItem("token") || "";
+async function cargarInventarioYAlertas() {
+  const [inv, alt] = await Promise.all([
+    getInventario(),
+    getAlertasStock().catch(() => []),
+  ]);
+  return {
+    inventario: Array.isArray(inv) ? inv : [],
+    alertas: Array.isArray(alt) ? alt : [],
+  };
+}
 
 export default function Inventario() {
   const navigate = useNavigate();
+  const { token, isAdmin, logout } = useSession();
 
-  const [inventario,  setInventario]  = useState([]);
-  const [alertas,     setAlertas]     = useState([]);
-  const [cargando,    setCargando]    = useState(true);
+  const { data, loading: cargando, run: cargarInventario } = useAsync(cargarInventarioYAlertas);
+  const inventario = useMemo(() => data?.inventario ?? [], [data]);
+  const alertas = useMemo(() => data?.alertas ?? [], [data]);
+
   const [editandoId,  setEditandoId]  = useState(null);
   const [formEdicion, setFormEdicion] = useState({ stock_actual: "", stock_minimo: "" });
   const [guardando,   setGuardando]   = useState(false);
@@ -21,39 +34,9 @@ export default function Inventario() {
   const [filtroEstado, setFiltroEstado] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const rol   = localStorage.getItem("rol");
-    if (!token) { navigate("/login", { replace: true }); return; }
-    if (rol !== "admin") { navigate("/pedido", { replace: true }); }
-  }, [navigate]);
-
-  function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("rol");
-    navigate("/login", { replace: true });
-  }
-
-  async function cargarInventario() {
-    setCargando(true);
-    try {
-      const [resInv, resAlt] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/api/inventario`,
-          { headers: { Authorization: `Bearer ${getToken()}` } }),
-        fetch(`${import.meta.env.VITE_API_URL}/api/inventario/alertas`,
-          { headers: { Authorization: `Bearer ${getToken()}` } }),
-      ]);
-      if (!resInv.ok) throw new Error();
-      const [dataInv, dataAlt] = await Promise.all([resInv.json(), resAlt.ok ? resAlt.json() : []]);
-      setInventario(Array.isArray(dataInv) ? dataInv : []);
-      setAlertas(Array.isArray(dataAlt)    ? dataAlt : []);
-    } catch {
-      setInventario([]);
-    } finally {
-      setCargando(false);
-    }
-  }
-
-  useEffect(() => { cargarInventario(); }, []);
+    if (!token) navigate("/login", { replace: true });
+    else if (!isAdmin) navigate("/pedido", { replace: true });
+  }, [token, isAdmin, navigate]);
 
   // ── Filtros ───────────────────────────────────────────────
   const inventarioFiltrado = useMemo(() => {
@@ -100,13 +83,7 @@ export default function Inventario() {
 
     setGuardando(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/inventario/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify({ stock_actual: stockActual, stock_minimo: stockMinimo }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || "Error al actualizar");
+      await apiAjustarStock(id, { stock_actual: stockActual, stock_minimo: stockMinimo });
 
       setMsgEdicion({ id, text: "✅ Stock actualizado", type: "success" });
       setTimeout(() => {

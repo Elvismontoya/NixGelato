@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import AdminNavbar from "../components/AdminNavbar.jsx";
 import Footer from "../components/Footer.jsx";
+import { getIngresosPorDia } from "../api/facturas.js";
+import { getAuditoria, getIngresosHoy } from "../api/auditoria.js";
+import { money } from "../domain/money.js";
+import useSession from "../hooks/useSession.js";
+import useAsync from "../hooks/useAsync.js";
 
-const money = (n) => Number(n || 0).toLocaleString("es-CO", { style: "currency", currency: "COP" });
-const getToken = () => localStorage.getItem("token") || "";
 
 const toYMD = (d) => {
   const y = d.getFullYear();
@@ -26,7 +28,7 @@ const ACCION_COLOR = {
 };
 
 export default function AdminAuditoria() {
-  const navigate = useNavigate();
+  const { logout } = useSession();
 
   const hoy        = useMemo(() => new Date(), []);
   const sieteAtras = useMemo(() => { const d = new Date(); d.setDate(d.getDate() - 7); return d; }, []);
@@ -34,12 +36,26 @@ export default function AdminAuditoria() {
   const [fechaDesde, setFechaDesde] = useState(toYMD(sieteAtras));
   const [fechaHasta, setFechaHasta] = useState(toYMD(hoy));
 
-  const [ingresosDia,  setIngresosDia]  = useState([]);
-  const [auditoria,    setAuditoria]    = useState([]);
-  const [ingresosHoy,  setIngresosHoy]  = useState(null);
-  const [cargando,     setCargando]     = useState(true);
-  const [loadingIngr,  setLoadingIngr]  = useState(true);
-  const [loadingAud,   setLoadingAud]   = useState(true);
+  // Tres consultas independientes (cada una con su propio estado de carga).
+  const ingresosDiaQ = useAsync(
+    () => getIngresosPorDia({ fecha_desde: fechaDesde, fecha_hasta: fechaHasta }),
+    { immediate: false },
+  );
+  const auditoriaQ = useAsync(() => getAuditoria({ limit: 500 }), { immediate: false });
+  const ingresosHoyQ = useAsync(getIngresosHoy, { immediate: false });
+
+  const ingresosDia = useMemo(() => Array.isArray(ingresosDiaQ.data) ? ingresosDiaQ.data : [], [ingresosDiaQ.data]);
+  const auditoria    = useMemo(() => Array.isArray(auditoriaQ.data) ? auditoriaQ.data : [], [auditoriaQ.data]);
+  const ingresosHoy  = ingresosHoyQ.data;
+  const loadingIngr  = ingresosDiaQ.loading;
+  const loadingAud   = auditoriaQ.loading;
+
+  const cargarIngresosPorDia = ingresosDiaQ.run;
+  const cargarAuditoria      = auditoriaQ.run;
+  const cargarIngresosHoy    = ingresosHoyQ.run;
+
+  const [primeraCarga, setPrimeraCarga] = useState(true);
+  const cargando = primeraCarga;
 
   // Filtros auditoría
   const [busqueda,     setBusqueda]     = useState("");
@@ -50,13 +66,7 @@ export default function AdminAuditoria() {
   const POR_PAGINA = 15;
   const [pagina, setPagina] = useState(1);
 
-  function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("rol");
-    navigate("/login", { replace: true });
-  }
-
-  // ── Totales ingresos ──────────────────────────────────────
+    // ── Totales ingresos ──────────────────────────────────────
   const { totalIngresos, totalVentas, promedioVenta } = useMemo(() => {
     const tIng = ingresosDia.reduce((s, it) => s + (Number(it.ingresos_totales) || 0), 0);
     const tVen = ingresosDia.reduce((s, it) => s + (Number(it.total_ventas)    || 0), 0);
@@ -88,58 +98,11 @@ export default function AdminAuditoria() {
   // Reset página al filtrar
   useEffect(() => { setPagina(1); }, [busqueda, filtroAccion, filtroTabla]);
 
-  // ── Fetchers ──────────────────────────────────────────────
-  async function cargarIngresosPorDia(d = fechaDesde, h = fechaHasta) {
-    setLoadingIngr(true);
-    try {
-      const params = new URLSearchParams();
-      if (d) params.append("fecha_desde", d);
-      if (h) params.append("fecha_hasta", h);
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/facturas/ingresos-por-dia?${params}`,
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setIngresosDia(Array.isArray(data) ? data : []);
-    } catch {
-      setIngresosDia([]);
-    } finally {
-      setLoadingIngr(false);
-    }
-  }
-
-  async function cargarAuditoria() {
-    setLoadingAud(true);
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/auditoria?limit=500`,
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setAuditoria(Array.isArray(data) ? data : []);
-    } catch {
-      setAuditoria([]);
-    } finally {
-      setLoadingAud(false);
-    }
-  }
-
-  async function cargarIngresosHoy() {
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/auditoria/ingresos-hoy`,
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
-      if (res.ok) setIngresosHoy(await res.json());
-    } catch { /* silencioso */ }
-  }
-
   useEffect(() => {
-    setCargando(true);
-    Promise.all([cargarIngresosPorDia(), cargarAuditoria(), cargarIngresosHoy()])
-      .finally(() => setCargando(false));
+    Promise.allSettled([cargarIngresosPorDia(), cargarAuditoria(), cargarIngresosHoy()])
+      .finally(() => setPrimeraCarga(false));
+    // Carga inicial única; el filtro por fechas se aplica con el botón "Aplicar".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Loading inicial ───────────────────────────────────────
@@ -200,7 +163,7 @@ export default function AdminAuditoria() {
                 <input type="date" className="form-control" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
               </div>
               <div className="col-md-4 d-flex align-items-end gap-2">
-                <button className="btn btn-brand flex-grow-1" onClick={() => cargarIngresosPorDia(fechaDesde, fechaHasta)}>
+                <button className="btn btn-brand flex-grow-1" onClick={cargarIngresosPorDia}>
                   Aplicar
                 </button>
                 <button className="btn btn-outline-secondary" onClick={() => { cargarAuditoria(); cargarIngresosHoy(); cargarIngresosPorDia(); }} title="Actualizar">

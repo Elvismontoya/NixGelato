@@ -70,12 +70,4 @@ export function useFormValidation(rules) {
   return { errores, validar, limpiar, limpiarCampo }
 }
 
-// Componente helper para mostrar el error de un campo
-export function FieldError({ errores, campo }) {
-  if (!errores[campo]) return null
-  return (
-    <div className="invalid-feedback d-block mt-1">
-      {errores[campo]}
-    </div>
-  )
-}
+// FieldError vive ahora en components/FieldError.jsx.

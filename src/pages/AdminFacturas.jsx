@@ -3,28 +3,41 @@ import { useNavigate } from "react-router-dom";
 import AdminNavbar from "../components/AdminNavbar.jsx";
 import CajeroNavbar from "../components/CajeroNavbar.jsx";
 import Footer from "../components/Footer.jsx";
+import { getEmpleados } from "../api/empleados.js";
+import { getFacturas, getFacturaDetalle, anularVenta as apiAnularVenta } from "../api/facturas.js";
+import { money } from "../domain/money.js";
+import useAsync from "../hooks/useAsync.js";
+import useSession from "../hooks/useSession.js";
+import FacturaDetalleModal from "../components/facturas/FacturaDetalleModal.jsx";
+import AnularVentaModal from "../components/facturas/AnularVentaModal.jsx";
 
-const money = (n) =>
-  Number(n || 0).toLocaleString("es-CO", { style: "currency", currency: "COP" });
-
-const getToken = () => localStorage.getItem("token") || "";
 const POR_PAGINA = 20;
 
 export default function AdminFacturas() {
   const navigate = useNavigate();
+  const { token, rol, logout } = useSession();
 
   const hoy        = useMemo(() => new Date(), []);
   const treintaDias = useMemo(() => { const d = new Date(); d.setDate(d.getDate() - 30); return d; }, []);
 
   const [fechaDesde, setFechaDesde] = useState(treintaDias.toISOString().split("T")[0]);
   const [fechaHasta, setFechaHasta] = useState(hoy.toISOString().split("T")[0]);
-  const [empleados,  setEmpleados]  = useState([]);
   const [idEmpleado, setIdEmpleado] = useState("");
   const [busqueda,   setBusqueda]   = useState("");
-
-  const [facturas,   setFacturas]   = useState([]);
-  const [cargando,   setCargando]   = useState(true);
   const [pagina,     setPagina]     = useState(1);
+
+  const empleadosQ = useAsync(() => getEmpleados({ limit: 100 }), { immediate: false });
+  const empleados = useMemo(() => Array.isArray(empleadosQ.data?.data) ? empleadosQ.data.data : [], [empleadosQ.data]);
+
+  const facturasQ = useAsync(async () => {
+    setPagina(1);
+    return getFacturas({ fecha_desde: fechaDesde, fecha_hasta: fechaHasta, id_empleado: idEmpleado });
+  }, { immediate: false });
+  const facturas = useMemo(() => Array.isArray(facturasQ.data) ? facturasQ.data : [], [facturasQ.data]);
+  const cargando = facturasQ.loading;
+
+  const cargarEmpleados = empleadosQ.run;
+  const cargarFacturas = facturasQ.run;
 
   const [showModal,  setShowModal]  = useState(false);
   const [detalle,    setDetalle]    = useState(null);
@@ -36,69 +49,20 @@ export default function AdminFacturas() {
   const [msgAnular,    setMsgAnular]    = useState({ text: "", type: "" });
   const [loadAnular,   setLoadAnular]   = useState(false);
 
-  // Auth
+  // Auth (redundante con ProtectedRoute, se mantiene por seguridad)
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const rol   = localStorage.getItem("rol");
     if (!token) { navigate("/login", { replace: true }); return; }
-    if (rol !== "admin" && rol !== "cajero") { navigate("/facturas", { replace: true }); }
-  }, [navigate]);
+    if (rol !== "admin" && rol !== "cajero") navigate("/facturas", { replace: true });
+  }, [token, rol, navigate]);
 
-  const rol    = localStorage.getItem("rol") || "";
   const Navbar = rol === "cajero" ? CajeroNavbar : AdminNavbar;
-
-  function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("rol");
-    navigate("/login", { replace: true });
-  }
-
-  // ── Fetchers ──────────────────────────────────────────────
-  async function cargarEmpleados() {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/empleados?limit=100`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setEmpleados(Array.isArray(data.data) ? data.data : []);
-      }
-    } catch (e) { console.error(e); }
-  }
-
-  async function cargarFacturas(fIni = fechaDesde, fFin = fechaHasta, emp = idEmpleado) {
-    setCargando(true);
-    setPagina(1);
-    try {
-      const params = new URLSearchParams();
-      if (fIni) params.append("fecha_desde", fIni);
-      if (fFin) params.append("fecha_hasta",  fFin);
-      if (emp)  params.append("id_empleado",  emp);
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/facturas?${params}`,
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setFacturas(Array.isArray(data) ? data : []);
-    } catch {
-      setFacturas([]);
-    } finally {
-      setCargando(false);
-    }
-  }
 
   async function verDetalle(id) {
     setLoadDetalle(true);
     setShowModal(true);
     setDetalle(null);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/facturas/${id}/detalle`,
-        { headers: { Authorization: `Bearer ${getToken()}` } }
-      );
-      if (!res.ok) throw new Error();
-      setDetalle(await res.json());
+      setDetalle(await getFacturaDetalle(id));
     } catch {
       setDetalle(null);
       setShowModal(false);
@@ -122,23 +86,11 @@ export default function AdminFacturas() {
     setLoadAnular(true);
     setMsgAnular({ text: "", type: "" });
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/facturas/${modalAnular.id_factura}/anular`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-          body: JSON.stringify({ motivo: motivoAnular.trim() }),
-        }
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setMsgAnular({ text: data.message || "Error al anular la venta", type: "danger" });
-        return;
-      }
+      await apiAnularVenta(modalAnular.id_factura, motivoAnular.trim());
       setModalAnular(null);
-      await cargarFacturas(fechaDesde, fechaHasta, idEmpleado);
-    } catch {
-      setMsgAnular({ text: "Error al conectar con el servidor", type: "danger" });
+      await cargarFacturas();
+    } catch (e) {
+      setMsgAnular({ text: e.message || "Error al anular la venta", type: "danger" });
     } finally {
       setLoadAnular(false);
     }
@@ -147,6 +99,8 @@ export default function AdminFacturas() {
   useEffect(() => {
     cargarEmpleados();
     cargarFacturas();
+    // Carga inicial única; los filtros se aplican con el botón "Aplicar".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Filtro local por búsqueda ─────────────────────────────
@@ -261,11 +215,11 @@ export default function AdminFacturas() {
               )}
               <div className={`col-md-${rol === "admin" ? 3 : 6} d-flex align-items-end gap-2`}>
                 <button className="btn btn-brand flex-grow-1"
-                  onClick={() => cargarFacturas(fechaDesde, fechaHasta, idEmpleado)}>
+                  onClick={cargarFacturas}>
                   Aplicar
                 </button>
                 <button className="btn btn-outline-secondary"
-                  onClick={() => cargarFacturas(fechaDesde, fechaHasta, idEmpleado)}
+                  onClick={cargarFacturas}
                   title="Actualizar">🔄</button>
               </div>
             </div>
@@ -386,146 +340,22 @@ export default function AdminFacturas() {
         </div>
       </main>
 
-      {/* Modal detalle */}
-      {showModal && (
-        <>
-          <div style={{ position: "fixed", inset: 0, zIndex: 1050, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(2px)" }}
-            onClick={() => setShowModal(false)} />
-          <div style={{ position: "fixed", inset: 0, zIndex: 1055, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", pointerEvents: "none" }}>
-            <div className="card border-0 shadow-lg" style={{ width: "100%", maxWidth: 680, borderRadius: "1.25rem", pointerEvents: "all", maxHeight: "90vh", overflowY: "auto" }}>
-              <div className="card-header border-0 pt-4 pb-3 px-4" style={{ background: "linear-gradient(135deg, var(--sky, #6cd2f7), var(--aqua, #91eed3))" }}>
-                <div className="d-flex justify-content-between align-items-center">
-                  <h5 className="fw-bold mb-0">
-                    {loadDetalle ? "Cargando..." : `Venta #${detalle?.factura?.id_factura}`}
-                  </h5>
-                  <button className="btn-close" onClick={() => setShowModal(false)} />
-                </div>
-              </div>
-              <div className="card-body p-4">
-                {loadDetalle ? (
-                  <div className="text-center py-4">
-                    <div className="spinner-border text-brand" role="status" />
-                  </div>
-                ) : detalle ? (
-                  <>
-                    {detalle.factura?.anulada && (
-                      <div className="alert alert-danger mb-3">
-                        <strong>⚠️ Venta anulada</strong>
-                        <div className="small mt-1">
-                          Motivo: {detalle.factura.motivo_anulacion || "—"}
-                          <br />
-                          Fecha de anulación: {detalle.factura.fecha_anulacion ? new Date(detalle.factura.fecha_anulacion).toLocaleString("es-CO") : "—"}
-                        </div>
-                      </div>
-                    )}
-                    <div className="row g-3 mb-4">
-                      {[
-                        { label: "Fecha",    val: new Date(detalle.factura?.fecha_hora).toLocaleString("es-CO") },
-                        { label: "Empleado", val: detalle.factura?.empleado_nombres || "N/A" },
-                        { label: "Cliente",  val: detalle.factura?.observaciones    || "—" },
-                        { label: "Total",    val: money(detalle.factura?.total_neto), bold: true },
-                      ].map((s) => (
-                        <div className="col-6" key={s.label}>
-                          <div className="text-muted small">{s.label}</div>
-                          <div className={s.bold ? "fw-bold text-success fs-5" : "fw-semibold"}>{s.val}</div>
-                        </div>
-                      ))}
-                    </div>
+      <FacturaDetalleModal
+        open={showModal}
+        detalle={detalle}
+        loading={loadDetalle}
+        onClose={() => setShowModal(false)}
+      />
 
-                    <h6 className="fw-bold mb-3">Productos</h6>
-                    <div className="table-responsive">
-                      <table className="table table-sm align-middle">
-                        <thead>
-                          <tr>
-                            <th>Producto</th>
-                            <th className="text-center">Cant.</th>
-                            <th className="text-end">Precio unit.</th>
-                            <th className="text-end">Subtotal</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(detalle.productos ?? []).map((p, i) => (
-                            <tr key={i}>
-                              <td>{p.nombre_producto || `Producto #${p.id_producto}`}</td>
-                              <td className="text-center"><span className="badge bg-light text-dark border">{p.cantidad}</span></td>
-                              <td className="text-end">{money(p.precio_unitario_venta)}</td>
-                              <td className="text-end fw-semibold">{money(p.subtotal_linea)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        <tfoot className="border-top">
-                          <tr>
-                            <td colSpan={3} className="text-end fw-bold">Total</td>
-                            <td className="text-end fw-bold text-success">{money(detalle.factura?.total_neto)}</td>
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-muted text-center py-4">No se pudo cargar el detalle</p>
-                )}
-              </div>
-              <div className="card-footer bg-transparent border-0 px-4 pb-4">
-                <button className="btn btn-secondary w-100" onClick={() => setShowModal(false)}>Cerrar</button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Modal anular venta */}
-      {modalAnular && (
-        <>
-          <div style={{ position: "fixed", inset: 0, zIndex: 1060, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(2px)" }}
-            onClick={() => !loadAnular && setModalAnular(null)} />
-          <div style={{ position: "fixed", inset: 0, zIndex: 1065, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", pointerEvents: "none" }}>
-            <div className="card border-0 shadow-lg" style={{ width: "100%", maxWidth: 460, borderRadius: "1.25rem", pointerEvents: "all" }}>
-              <div className="card-body p-4">
-                <div className="text-center mb-3">
-                  <div style={{ fontSize: "2.5rem" }}>🗑️</div>
-                  <h5 className="fw-bold mt-2 mb-1">¿Anular esta venta?</h5>
-                  <p className="text-muted small mb-0">
-                    Venta #{modalAnular.id_factura} por <strong>{money(modalAnular.total_neto)}</strong>
-                  </p>
-                  <p className="text-muted small">
-                    El stock de los productos vendidos será restaurado y la venta quedará marcada como anulada (no se elimina, para fines de auditoría).
-                  </p>
-                </div>
-
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">Motivo de anulación *</label>
-                  <textarea
-                    className="form-control"
-                    rows={3}
-                    value={motivoAnular}
-                    onChange={(e) => setMotivoAnular(e.target.value)}
-                    placeholder="Ej: Producto equivocado, error de cobro, cliente canceló..."
-                    autoFocus
-                  />
-                </div>
-
-                {msgAnular.text && (
-                  <div className={`alert alert-${msgAnular.type === "danger" ? "danger" : "success"} py-2 mb-3`}>
-                    {msgAnular.text}
-                  </div>
-                )}
-
-                <div className="d-flex gap-2 justify-content-center">
-                  <button className="btn btn-outline-secondary px-4" onClick={() => setModalAnular(null)} disabled={loadAnular}>
-                    Cancelar
-                  </button>
-                  <button className="btn btn-danger px-4" onClick={anularVenta} disabled={loadAnular}>
-                    {loadAnular
-                      ? <><span className="spinner-border spinner-border-sm me-2" />Anulando...</>
-                      : "Anular venta"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      <AnularVentaModal
+        factura={modalAnular}
+        motivo={motivoAnular}
+        setMotivo={setMotivoAnular}
+        msg={msgAnular}
+        loading={loadAnular}
+        onConfirm={anularVenta}
+        onCancel={() => setModalAnular(null)}
+      />
 
       <Footer />
     </>

@@ -54,20 +54,35 @@ npm install
 # Instalar dependencias del backend
 npm --prefix server install
 
-# Copiar variables de entorno de ejemplo
+# Copiar variables de entorno de ejemplo (frontend y backend)
 copy .env.example .env
+copy server\.env.example server\.env
 ```
 
 ### Variables de entorno
 
-Configura las siguientes variables (ajusta nombres según tu proyecto):
+El proyecto usa **dos** archivos de entorno separados:
+
+**Frontend** — `.env` en la raíz (plantilla: `.env.example`):
 
 ```
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-DATABASE_URL=
+# Vacío en local (Vite hace proxy de /api a localhost:4000).
+# En producción: URL pública del backend.
+VITE_API_URL=
 ```
+
+**Backend** — `server/.env` (plantilla: `server/.env.example`):
+
+```
+SUPABASE_URL=https://tu-proyecto.supabase.co
+SUPABASE_SERVICE_ROLE=eyJ...            # service_role key de Supabase
+JWT_SECRET=clave_larga_y_aleatoria_min_32_chars
+BCRYPT_SALT_ROUNDS=10
+PORT=4000
+FRONTEND_ORIGIN=https://nixgelato.vercel.app
+```
+
+> La variable del service key también se acepta como `SUPABASE_SERVICE_ROLE_KEY`.
 
 ### Ejecutar en desarrollo
 

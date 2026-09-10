@@ -22,9 +22,50 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
   const [verificando, setVerificando] = useState(true)
   const [cajaAbierta, setCajaAbierta] = useState(false)
 
-  const esAdmin  = rol === 'admin'
-  const esCajero = rol === 'cajero'
+  const esAdmin    = rol === 'admin'
+  const esCajero   = rol === 'cajero'
   const rutaExenta = RUTAS_SIN_MODAL.some((r) => location.pathname.startsWith(r))
+
+  // ── Verificación de caja ────────────────────────────────────
+  // IMPORTANTE: todos los hooks se ejecutan SIEMPRE, antes de
+  // cualquier `return` condicional (Reglas de Hooks de React).
+  useEffect(() => {
+    // Sin token o en ruta exenta → no se consulta la caja
+    if (!token || rutaExenta) {
+      setCajaAbierta(true)
+      setVerificando(false)
+      return
+    }
+
+    let cancelado = false
+    setVerificando(true)
+
+    async function verificarCaja() {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/caja/estado`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        if (cancelado) return
+        if (!res.ok) {
+          setCajaAbierta(true) // Si falla, dejar pasar
+        } else {
+          const data = await res.json()
+          if (cancelado) return
+          setCajaAbierta(data.apertura?.estado === 'abierta')
+        }
+      } catch {
+        if (!cancelado) setCajaAbierta(true) // Sin conexión, dejar pasar
+      } finally {
+        if (!cancelado) setVerificando(false)
+      }
+    }
+
+    verificarCaja()
+    return () => { cancelado = true }
+  }, [location.pathname, token, rutaExenta])
+
+  // ── A partir de aquí, returns condicionales (ya sin hooks) ──
 
   // Sin token → login
   if (!token) return <Navigate to="/login" replace />
@@ -38,36 +79,6 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
   if (allowedRoles.length > 0 && !allowedRoles.includes(rol)) {
     return <Navigate to={esAdmin ? '/admin' : '/pedido'} replace />
   }
-
-  useEffect(() => {
-    // Solo verificar caja para admin y cajero, no en rutas exentas
-    if (rutaExenta) {
-      setVerificando(false)
-      setCajaAbierta(true)
-      return
-    }
-
-    async function verificarCaja() {
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/caja/estado`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
-        if (!res.ok) {
-          setCajaAbierta(true) // Si falla red, dejar pasar
-        } else {
-          const data = await res.json()
-          setCajaAbierta(data.apertura?.estado === 'abierta')
-        }
-      } catch {
-        setCajaAbierta(true) // Sin conexión, dejar pasar
-      } finally {
-        setVerificando(false)
-      }
-    }
-
-    verificarCaja()
-  }, [location.pathname])
 
   // Mientras verifica
   if (verificando) {

@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-const getToken = () => localStorage.getItem("token") || "";
+import { checkInitial, login as loginRequest, registerAdmin as registerAdminRequest } from "../api/auth.js";
+import { getToken, getRol, saveSession } from "../hooks/useSession.js";
 
 function guardarSesionYEntrar(navigate, token, rol) {
-  localStorage.setItem("token", token);
-  localStorage.setItem("rol", rol);
+  saveSession(token, rol);
   if (rol === "admin") navigate("/admin", { replace: true });
   else navigate("/pedido", { replace: true });
 }
@@ -36,24 +35,18 @@ export default function Login() {
   // si ya hay sesión, redirige
   useEffect(() => {
     const t = getToken();
-    const r = localStorage.getItem("rol");
+    const r = getRol();
     if (t && r) {
       if (r === "admin") navigate("/admin", { replace: true });
       else navigate("/pedido", { replace: true });
       return;
     }
     (async () => {
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/check-initial`);
-        const data = await res.json();
-        if (data?.needsAdmin === true) {
-          setShowRegister(true);
-          setTab("register");
-        } else {
-          setShowRegister(false);
-          setTab("login");
-        }
-      } catch {
+      const { ok, data } = await checkInitial();
+      if (ok && data?.needsAdmin === true) {
+        setShowRegister(true);
+        setTab("register");
+      } else {
         setShowRegister(false);
         setTab("login");
       }
@@ -69,20 +62,13 @@ export default function Login() {
     setLoginMsg({ text: "Validando...", type: "muted" });
     setLoginLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usuario: usuario.trim(), password: password.trim() }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      const { ok, data } = await loginRequest(usuario.trim(), password.trim());
+      if (!ok) {
         setLoginMsg({ text: data.message || "Credenciales inválidas.", type: "danger" });
         return;
       }
       setLoginMsg({ text: "Ingreso exitoso.", type: "success" });
       guardarSesionYEntrar(navigate, data.token, data.rol);
-    } catch {
-      setLoginMsg({ text: "Error conectando con el servidor.", type: "danger" });
     } finally {
       setLoginLoading(false);
     }
@@ -97,25 +83,18 @@ export default function Login() {
     setRegisterMsg({ text: "Creando administrador...", type: "muted" });
     setRegisterLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register-admin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          nombres: regNombres.trim(),
-          apellidos: regApellidos.trim(),
-          usuario: regUsuario.trim(),
-          password: regPassword.trim(),
-        }),
+      const { ok, data } = await registerAdminRequest({
+        nombres: regNombres.trim(),
+        apellidos: regApellidos.trim(),
+        usuario: regUsuario.trim(),
+        password: regPassword.trim(),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      if (!ok) {
         setRegisterMsg({ text: data.message || "No se pudo crear el administrador.", type: "danger" });
         return;
       }
       setRegisterMsg({ text: "Administrador creado. Ingresando...", type: "success" });
       guardarSesionYEntrar(navigate, data.token, data.rol);
-    } catch {
-      setRegisterMsg({ text: "Error conectando con el servidor.", type: "danger" });
     } finally {
       setRegisterLoading(false);
     }
@@ -215,7 +194,7 @@ export default function Login() {
                         <label className="form-label fw-semibold">Contraseña</label>
                         <div className="input-group input-group-lg">
                           <span className="input-group-text bg-transparent border-end-0">
-                            {showPass ? "🔒" : "🔒"}
+                            🔒
                           </span>
                           <input
                             type={showPass ? "text" : "password"}
@@ -226,6 +205,14 @@ export default function Login() {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                           />
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary"
+                            onClick={() => setShowPass((v) => !v)}
+                            tabIndex={-1}
+                          >
+                            {showPass ? "Ocultar" : "Mostrar"}
+                          </button>
                         </div>
                         <div className="form-text text-end">¿Olvidaste tu contraseña?</div>
                       </div>

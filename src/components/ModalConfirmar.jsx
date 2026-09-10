@@ -1,7 +1,22 @@
 // Modal de confirmación reutilizable
 // Uso: <ModalConfirmar config={modalConfig} onConfirm={fn} onCancel={fn} />
 
+import { useEffect, useRef } from 'react'
+
 export default function ModalConfirmar({ config, onConfirm, onCancel }) {
+  const okRef = useRef(null)
+
+  // Cerrar con Escape + enfocar el botón de acción al abrir.
+  useEffect(() => {
+    if (!config) return
+    okRef.current?.focus()
+    function onKey(e) {
+      if (e.key === 'Escape' && !config.loading) onCancel?.()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [config, onCancel])
+
   if (!config) return null
 
   const {
@@ -32,6 +47,9 @@ export default function ModalConfirmar({ config, onConfirm, onCancel }) {
       }}>
         <div
           className="card border-0 shadow-lg"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-confirmar-titulo"
           style={{
             width: '100%', maxWidth: '420px',
             borderRadius: '1.25rem',
@@ -39,10 +57,10 @@ export default function ModalConfirmar({ config, onConfirm, onCancel }) {
           }}
         >
           <div className="card-body p-4 text-center">
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }} aria-hidden="true">
               {iconos[tipo] || '⚠️'}
             </div>
-            <h5 className="fw-bold mb-2">{titulo}</h5>
+            <h5 className="fw-bold mb-2" id="modal-confirmar-titulo">{titulo}</h5>
             <p className="text-muted mb-1">{mensaje}</p>
 
             {detalle && (
@@ -63,6 +81,7 @@ export default function ModalConfirmar({ config, onConfirm, onCancel }) {
                 {txtCancel}
               </button>
               <button
+                ref={okRef}
                 className={`btn btn-${tipo} px-4`}
                 onClick={onConfirm}
                 disabled={loading}

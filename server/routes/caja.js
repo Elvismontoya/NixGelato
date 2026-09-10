@@ -1,250 +1,38 @@
-// server/routes/caja.js
+// Capa HTTP de caja.
 import express from 'express'
-import { supabaseAdmin } from '../db/supabase.js'
-import { verifyToken, requireAdmin, requireRoles } from '../authMiddleware.js'
+import { asyncHandler } from '../lib/asyncHandler.js'
+import { verifyToken, requireAdmin, requireRoles } from '../middleware/auth.js'
+import { validate } from '../middleware/validate.js'
+import { aperturaCajaSchema, cierreCajaSchema } from '../schemas/index.js'
+import { cajaService } from '../container.js'
 
 const router = express.Router()
 
-// Zona horaria Colombia
-const COL_TZ = 'America/Bogota'
-
-function fechaHoyCol() {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: COL_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
-  }).format(new Date())
-}
-
 // ── GET /api/caja/estado ───────────────────────────────────
-// Caja compartida: devuelve la apertura del día (la abra quien sea)
-router.get('/estado', verifyToken, requireRoles('admin', 'cajero'), async (_req, res) => {
-  try {
-    const hoy = fechaHoyCol()
-    const { data, error } = await supabaseAdmin
-      .from('aperturas_caja')
-      .select(`
-        id_apertura, fecha, monto_apertura, monto_cierre,
-        total_ventas_efectivo, diferencia, estado,
-        observaciones_apertura, observaciones_cierre,
-        fecha_hora_apertura, fecha_hora_cierre,
-        id_empleado,
-        empleados:empleados!aperturas_caja_id_empleado_fkey(nombres, apellidos)
-      `)
-      .eq('fecha', hoy)
-      .order('id_apertura', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+router.get('/estado', verifyToken, requireRoles('admin', 'cajero'), asyncHandler(async (_req, res) => {
+  res.json(await cajaService.estado())
+}))
 
-    if (error) throw error
-
-    res.json({ fecha: hoy, apertura: data ?? null })
-  } catch (err) {
-    console.error('GET /caja/estado:', err.message)
-    res.status(500).json({ message: 'Error al consultar estado de caja' })
-  }
-})
-
-// ── GET /api/caja/estado-todas ──────────────────────────────
-// Admin: ver todas las cajas abiertas/cerradas hoy (multi-caja)
-router.get('/estado-todas', verifyToken, requireAdmin, async (_req, res) => {
-  try {
-    const hoy = fechaHoyCol()
-    const { data, error } = await supabaseAdmin
-      .from('aperturas_caja')
-      .select(`
-        id_apertura, fecha, monto_apertura, monto_cierre,
-        total_ventas_efectivo, diferencia, estado,
-        observaciones_apertura, observaciones_cierre,
-        fecha_hora_apertura, fecha_hora_cierre,
-        id_empleado,
-        empleados:empleados!aperturas_caja_id_empleado_fkey(nombres, apellidos)
-      `)
-      .eq('fecha', hoy)
-      .order('fecha_hora_apertura', { ascending: true })
-
-    if (error) throw error
-    res.json({ fecha: hoy, cajas: data ?? [] })
-  } catch (err) {
-    console.error('GET /caja/estado-todas:', err.message)
-    res.status(500).json({ message: 'Error al consultar cajas del día' })
-  }
-})
+// ── GET /api/caja/estado-todas ─────────────────────────────
+router.get('/estado-todas', verifyToken, requireAdmin, asyncHandler(async (_req, res) => {
+  res.json(await cajaService.estadoTodas())
+}))
 
 // ── GET /api/caja/historial ────────────────────────────────
-router.get('/historial', verifyToken, requireAdmin, async (req, res) => {
-  try {
-    const limit = Math.min(parseInt(req.query.limit ?? '60', 10), 200)
-    const { data, error } = await supabaseAdmin
-      .from('aperturas_caja')
-      .select(`
-        id_apertura, fecha, monto_apertura, monto_cierre,
-        total_ventas_efectivo, diferencia, estado,
-        fecha_hora_apertura, fecha_hora_cierre,
-        id_empleado,
-        empleados:empleados!aperturas_caja_id_empleado_fkey(nombres, apellidos)
-      `)
-      .order('fecha', { ascending: false })
-      .order('fecha_hora_apertura', { ascending: false })
-      .limit(limit)
-
-    if (error) throw error
-    res.json(data ?? [])
-  } catch (err) {
-    console.error('GET /caja/historial:', err.message)
-    res.status(500).json({ message: 'Error al obtener historial de caja' })
-  }
-})
+router.get('/historial', verifyToken, requireAdmin, asyncHandler(async (req, res) => {
+  res.json(await cajaService.historial(req.query.limit))
+}))
 
 // ── POST /api/caja/apertura ────────────────────────────────
-// Caja compartida: una sola apertura por día, sin importar quién la abra
-router.post('/apertura', verifyToken, requireRoles('admin', 'cajero'), async (req, res) => {
-  const { monto_apertura, observaciones } = req.body
-  const monto = Number(monto_apertura)
-
-  if (isNaN(monto) || monto < 0) {
-    return res.status(400).json({ message: 'El monto de apertura debe ser un número >= 0' })
-  }
-
-  try {
-    const hoy = fechaHoyCol()
-
-    // Verificar que NO exista ya una apertura para hoy (de cualquier empleado)
-    const { data: existing } = await supabaseAdmin
-      .from('aperturas_caja')
-      .select('id_apertura, estado')
-      .eq('fecha', hoy)
-      .maybeSingle()
-
-    if (existing) {
-      return res.status(409).json({
-        message: existing.estado === 'abierta'
-          ? 'La caja de hoy ya fue abierta'
-          : 'La caja de hoy ya fue abierta y cerrada. No se puede abrir otra.',
-      })
-    }
-
-    const { data: apertura, error } = await supabaseAdmin
-      .from('aperturas_caja')
-      .insert([{
-        id_empleado:           req.user.id_empleado,
-        fecha:                 hoy,
-        monto_apertura:        monto,
-        estado:                'abierta',
-        observaciones_apertura: observaciones?.trim() || null,
-        fecha_hora_apertura:   new Date().toISOString(),
-      }])
-      .select()
-      .single()
-
-    if (error) throw error
-
-    // Auditoría
-    await supabaseAdmin.from('auditoria').insert([{
-      id_empleado: req.user.id_empleado,
-      accion: 'INSERT',
-      tabla_afectada: 'aperturas_caja',
-      id_registro_afectado: String(apertura.id_apertura),
-      descripcion: `Apertura de caja: $${monto.toLocaleString('es-CO')} - Fecha: ${hoy}`,
-    }]).then(({ error }) => { if (error) console.error("Auditoría:", error.message) })
-
-    res.status(201).json({ message: 'Caja abierta correctamente', apertura })
-  } catch (err) {
-    console.error('POST /caja/apertura:', err.message)
-    res.status(500).json({ message: 'Error al registrar apertura de caja' })
-  }
-})
+router.post('/apertura', verifyToken, requireRoles('admin', 'cajero'), validate(aperturaCajaSchema), asyncHandler(async (req, res) => {
+  const apertura = await cajaService.abrir(req.body ?? {}, req.user.id_empleado)
+  res.status(201).json({ message: 'Caja abierta correctamente', apertura })
+}))
 
 // ── POST /api/caja/cierre ──────────────────────────────────
-// Calcula ventas en efectivo del EMPLEADO dueño de la apertura
-router.post('/cierre', verifyToken, requireAdmin, async (req, res) => {
-  const { id_apertura, monto_cierre, observaciones } = req.body
-  const montoCierre = Number(monto_cierre)
-
-  if (!id_apertura) return res.status(400).json({ message: 'id_apertura es requerido' })
-  if (isNaN(montoCierre) || montoCierre < 0) {
-    return res.status(400).json({ message: 'El monto de cierre debe ser un número >= 0' })
-  }
-
-  try {
-    // Obtener la apertura
-    const { data: apertura, error: errAp } = await supabaseAdmin
-      .from('aperturas_caja')
-      .select('id_apertura, fecha, monto_apertura, estado, id_empleado')
-      .eq('id_apertura', id_apertura)
-      .single()
-
-    if (errAp || !apertura) return res.status(404).json({ message: 'Apertura no encontrada' })
-    if (apertura.estado === 'cerrada') return res.status(400).json({ message: 'Esta caja ya está cerrada' })
-
-    // Calcular ventas en efectivo del día (de todos los empleados, caja compartida)
-    const hoy = apertura.fecha
-    const { data: facturas, error: errFact } = await supabaseAdmin
-      .from('facturas')
-      .select(`
-        total_neto, fecha_hora, id_empleado, anulada,
-        facturas_pagos:facturas_pagos(
-          monto_pagado,
-          metodos_pago:metodos_pago!facturas_pagos_id_metodo_fkey(nombre_metodo)
-        )
-      `)
-      .gte('fecha_hora', `${hoy}T00:00:00`)
-      .lte('fecha_hora', `${hoy}T23:59:59`)
-
-    if (errFact) throw errFact
-
-    // Solo contar pagos en efectivo de facturas no anuladas
-    let totalEfectivo = 0
-    for (const f of facturas ?? []) {
-      if (f.anulada) continue
-      for (const p of f.facturas_pagos ?? []) {
-        if (p.metodos_pago?.nombre_metodo?.toLowerCase() === 'efectivo') {
-          totalEfectivo += Number(p.monto_pagado) || 0
-        }
-      }
-    }
-
-    const diferencia = montoCierre - (Number(apertura.monto_apertura) + totalEfectivo)
-
-    const { data: cierreFinal, error: errCierre } = await supabaseAdmin
-      .from('aperturas_caja')
-      .update({
-        monto_cierre:           montoCierre,
-        total_ventas_efectivo:  totalEfectivo,
-        diferencia:             diferencia,
-        estado:                 'cerrada',
-        observaciones_cierre:   observaciones?.trim() || null,
-        fecha_hora_cierre:      new Date().toISOString(),
-      })
-      .eq('id_apertura', id_apertura)
-      .select()
-      .single()
-
-    if (errCierre) throw errCierre
-
-    // Auditoría
-    await supabaseAdmin.from('auditoria').insert([{
-      id_empleado: req.user.id_empleado,
-      accion: 'UPDATE',
-      tabla_afectada: 'aperturas_caja',
-      id_registro_afectado: String(id_apertura),
-      descripcion: `Cierre de caja. Monto: $${montoCierre.toLocaleString('es-CO')} | Ventas efectivo: $${totalEfectivo.toLocaleString('es-CO')} | Diferencia: $${diferencia.toLocaleString('es-CO')}`,
-    }]).then(({ error }) => { if (error) console.error("Auditoría:", error.message) })
-
-    res.json({
-      message: 'Caja cerrada correctamente',
-      resumen: {
-        monto_apertura:        Number(apertura.monto_apertura),
-        total_ventas_efectivo: totalEfectivo,
-        monto_esperado:        Number(apertura.monto_apertura) + totalEfectivo,
-        monto_cierre:          montoCierre,
-        diferencia,
-        estado: diferencia === 0 ? 'exacto' : diferencia > 0 ? 'sobrante' : 'faltante',
-      },
-      cierre: cierreFinal,
-    })
-  } catch (err) {
-    console.error('POST /caja/cierre:', err.message)
-    res.status(500).json({ message: 'Error al registrar cierre de caja' })
-  }
-})
+router.post('/cierre', verifyToken, requireAdmin, validate(cierreCajaSchema), asyncHandler(async (req, res) => {
+  const { resumen, cierre } = await cajaService.cerrar(req.body ?? {}, req.user.id_empleado)
+  res.json({ message: 'Caja cerrada correctamente', resumen, cierre })
+}))
 
 export default router
