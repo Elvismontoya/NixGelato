@@ -1,9 +1,27 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+
+const LINKS = [
+  { to: "/pedido", label: "Caja" },
+  { to: "/admin", label: "Productos" },
+  { to: "/admin/empleados", label: "Empleados" },
+  { to: "/admin/inventario", label: "Inventario" },
+  { to: "/facturas", label: "Ventas" },
+  { to: "/admin/auditoria", label: "Auditoría" },
+  { to: "/admin/caja", label: "Caja" },
+];
 
 export default function AdminNavbar({ onLogout }) {
   const { pathname } = useLocation();
+  const [abierto, setAbierto] = useState(false);
+
   const active = (path) =>
     pathname === path ? "btn-brand" : "btn-outline-brand";
+
+  // Cerrar el menú al cambiar de ruta (navegación en móvil).
+  useEffect(() => {
+    setAbierto(false);
+  }, [pathname]);
 
   return (
     <nav className="navbar navbar-expand-lg border-bottom sticky-top">
@@ -11,54 +29,33 @@ export default function AdminNavbar({ onLogout }) {
         <Link className="navbar-brand fw-bold" to="/">
           🍨 NixGelato
         </Link>
+
+        {/* Toggle propio (no depende del JS de Bootstrap) */}
         <button
           className="navbar-toggler"
           type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#adminNav"
           aria-controls="adminNav"
-          aria-expanded="false"
+          aria-expanded={abierto}
+          aria-label="Abrir menú"
+          onClick={() => setAbierto((v) => !v)}
         >
           <span className="navbar-toggler-icon" />
         </button>
-        <div className="collapse navbar-collapse" id="adminNav">
+
+        <div
+          className={`${abierto ? "d-block" : "d-none"} d-lg-flex flex-grow-1`}
+          id="adminNav"
+        >
           <div className="d-flex flex-wrap gap-2 ms-auto align-items-center mt-2 mt-lg-0">
-            <Link className={`btn btn-sm ${active("/pedido")}`} to="/pedido">
-              Caja
-            </Link>
-            <Link className={`btn btn-sm ${active("/admin")}`} to="/admin">
-              Productos
-            </Link>
-            <Link
-              className={`btn btn-sm ${active("/admin/empleados")}`}
-              to="/admin/empleados"
-            >
-              Empleados
-            </Link>
-            <Link
-              className={`btn btn-sm ${active("/admin/inventario")}`}
-              to="/admin/inventario"
-            >
-              Inventario
-            </Link>
-            <Link
-              className={`btn btn-sm ${active("/facturas")}`}
-              to="/facturas"
-            >
-              Ventas
-            </Link>
-            <Link
-              className={`btn btn-sm ${active("/admin/auditoria")}`}
-              to="/admin/auditoria"
-            >
-              Auditoría
-            </Link>
-            <Link
-              className={`btn btn-sm ${active("/admin/caja")}`}
-              to="/admin/caja"
-            >
-              Caja
-            </Link>
+            {LINKS.map((l) => (
+              <Link
+                key={l.to + l.label}
+                className={`btn btn-sm ${active(l.to)}`}
+                to={l.to}
+              >
+                {l.label}
+              </Link>
+            ))}
             <button
               onClick={onLogout}
               className="btn btn-sm btn-outline-secondary"

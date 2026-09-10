@@ -486,3 +486,35 @@ footer a:hover::after {
   justify-content: center;
   white-space: nowrap;
 }
+
+/* ===========================
+   Ajustes para móvil / táctil
+   =========================== */
+@media (max-width: 575.98px) {
+  /* Evita el zoom automático de iOS Safari al enfocar un input:
+     necesita font-size >= 16px en el control enfocado. */
+  .form-control,
+  .form-control-sm,
+  .form-select,
+  .form-select-sm,
+  .input-group-sm > .form-control,
+  .input-group-sm > .form-select {
+    font-size: 16px;
+  }
+
+  /* Objetivos táctiles más cómodos para el dedo. */
+  .btn-xs,
+  .btn-table-action {
+    min-height: 40px;
+    padding-inline: 0.75rem;
+  }
+
+  .btn-sm {
+    min-height: 38px;
+  }
+
+  /* Los botones de billete rápido del POS: que quepan bien y se puedan tocar. */
+  .btn-xs {
+    font-size: 0.85rem;
+  }
+}

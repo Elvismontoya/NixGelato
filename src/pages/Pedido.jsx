@@ -491,7 +491,7 @@ export default function Pedido() {
           </div>
 
           {/* ── PANEL DERECHO: Pedido ── */}
-          <div className="col-xl-4 col-lg-5">
+          <div className="col-xl-4 col-lg-5" id="panel-pedido">
             <div className="card card-soft shadow-sm sticky-sidebar">
               <div className="card-header bg-white border-0 pt-4 pb-2 px-4">
                 <div className="d-flex justify-content-between align-items-center">
@@ -626,6 +626,29 @@ export default function Pedido() {
           </div>
         </div>
       </main>
+
+      {/* Botón flotante "ir al pedido" — solo en móvil/tablet (panel apilado abajo) */}
+      {pedido.length > 0 && !productoSeleccionado && (
+        <button
+          type="button"
+          className="btn btn-brand d-lg-none shadow-lg"
+          onClick={() =>
+            document
+              .getElementById("panel-pedido")
+              ?.scrollIntoView({ behavior: "smooth", block: "start" })
+          }
+          style={{
+            position: "fixed",
+            right: 16,
+            bottom: 16,
+            zIndex: 1040,
+            borderRadius: 999,
+            padding: "0.75rem 1.25rem",
+          }}
+        >
+          🛒 {pedido.length} · {money(total)}
+        </button>
+      )}
 
       {/* Modal vaciar pedido */}
       <ModalConfirmar

@@ -7,11 +7,11 @@ export default function CajeroNavbar({ onLogout }) {
 
   return (
     <nav className="navbar navbar-expand-lg border-bottom sticky-top">
-      <div className="container">
+      <div className="container flex-wrap gap-2">
         <Link className="navbar-brand fw-bold" to="/pedido">
           🍨 NixGelato
         </Link>
-        <div className="d-flex gap-2 ms-auto align-items-center">
+        <div className="d-flex flex-wrap gap-2 ms-auto align-items-center">
           <Link className={`btn btn-sm ${active("/pedido")}`} to="/pedido">
             Caja
           </Link>
