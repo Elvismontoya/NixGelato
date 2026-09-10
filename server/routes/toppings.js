@@ -11,6 +11,7 @@ router.get(
   "/",
   verifyToken,
   asyncHandler(async (_req, res) => {
+    res.set("Cache-Control", "private, max-age=60");
     res.json(await toppingsService.listar());
   }),
 );

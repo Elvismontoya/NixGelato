@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import compression from "compression";
 
 import { errorHandler } from "./middleware/errorHandler.js";
 import authRouter from "./routes/auth.js";
@@ -26,6 +27,10 @@ app.disable("x-powered-by");
 // no se necesita CSP; el resto de defaults de helmet sí aplican (HSTS,
 // nosniff, frameguard, referrer-policy, etc.).
 app.use(helmet({ contentSecurityPolicy: false }));
+
+// Compresión gzip/deflate de las respuestas JSON (payloads de listados
+// comprimen ~70-80%). El umbral por defecto (1 KB) evita comprimir de más.
+app.use(compression());
 
 const allowedOrigins = [
   "http://localhost:5173",

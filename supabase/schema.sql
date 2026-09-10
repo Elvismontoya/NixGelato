@@ -174,6 +174,16 @@ create index if not exists idx_aperturas_caja_estado on public.aperturas_caja (e
 create index if not exists idx_aperturas_caja_fecha  on public.aperturas_caja (fecha desc);
 create index if not exists idx_facturas_anulada      on public.facturas (anulada);
 
+-- v11: índices de rendimiento (filtros/orden/joins de los listados)
+create index if not exists idx_facturas_fecha_hora        on public.facturas (fecha_hora desc);
+create index if not exists idx_facturas_id_empleado       on public.facturas (id_empleado);
+create index if not exists idx_prodfact_id_factura        on public.productos_facturas (id_factura);
+create index if not exists idx_prodfact_id_producto       on public.productos_facturas (id_producto);
+create index if not exists idx_facturas_pagos_id_factura  on public.facturas_pagos (id_factura);
+create index if not exists idx_auditoria_fecha_hora       on public.auditoria (fecha_hora desc);
+create index if not exists idx_auditoria_id_empleado      on public.auditoria (id_empleado);
+create index if not exists idx_productos_activo_categoria on public.productos (activo, id_categoria);
+
 -- ─────────────────────────────────────────────────────────────
 -- Funciones RPC transaccionales (SECURITY DEFINER)
 -- Solo las llama el backend con service_role.

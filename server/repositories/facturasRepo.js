@@ -1,6 +1,14 @@
 // Acceso a datos de `facturas` (y detalle / RPC de venta).
 import { supabaseAdmin } from "../db/supabase.js";
 
+// Solo las columnas que consume la capa de servicio (mapFacturaResumen).
+// Evita traer/serializar el resto de la fila en cada listado.
+const SELECT_RESUMEN = `
+  id_factura, fecha_hora, total_bruto, descuento_total, total_neto,
+  total_iva, total_base, observaciones, anulada, fecha_anulacion, motivo_anulacion,
+  empleados:empleados!facturas_id_empleado_fkey(nombres, apellidos)
+`;
+
 // RPC transaccional: registra la venta completa. Si lanza, se propaga un
 // Error cuyo `message` es el texto de la RAISE EXCEPTION.
 export async function registrarVenta({
@@ -48,9 +56,7 @@ export async function ingresosPorDia({ fechaDesde, fechaHasta }) {
 export async function list({ fechaDesde, fechaHasta, idEmpleado }) {
   let query = supabaseAdmin
     .from("facturas")
-    .select(
-      "*, empleados:empleados!facturas_id_empleado_fkey(nombres, apellidos)",
-    )
+    .select(SELECT_RESUMEN)
     .order("fecha_hora", { ascending: false });
   if (fechaDesde) query = query.gte("fecha_hora", `${fechaDesde}T00:00:00`);
   if (fechaHasta) query = query.lte("fecha_hora", `${fechaHasta}T23:59:59`);
@@ -63,9 +69,7 @@ export async function list({ fechaDesde, fechaHasta, idEmpleado }) {
 export async function findConEmpleado(id) {
   const { data, error } = await supabaseAdmin
     .from("facturas")
-    .select(
-      "*, empleados:empleados!facturas_id_empleado_fkey(nombres, apellidos)",
-    )
+    .select(SELECT_RESUMEN)
     .eq("id_factura", id)
     .maybeSingle();
   if (error) throw error;

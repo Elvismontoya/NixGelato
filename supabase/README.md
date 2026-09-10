@@ -33,10 +33,11 @@ primer admin desde la pantalla "Configuración inicial" de la app.
 | `…_v8_drop_funciones_legadas.sql` | Elimina `actualizar_stock`, `revertir_stock`, `crear_factura`, `existe_apertura_hoy` |
 | `…_v9_configuracion_negocio.sql` | Tabla `configuracion_negocio` (fila única) — datos del negocio, antes hardcodeados en `Ticket.jsx` |
 | `…_v10_iva_por_producto.sql` | `productos.tarifa_iva` + desglose IVA por línea (`productos_facturas.tarifa_iva`/`iva_linea`) y por factura (`facturas.total_iva`/`total_base`); `registrar_venta` v2 |
+| `…_v11_indices_rendimiento.sql` | Índices en columnas de filtro/orden/join de los listados (facturas, productos_facturas, facturas_pagos, auditoria, productos) |
 
 ## Estado del remoto
 
-Todas (v2–v10) **están aplicadas** en producción (v2 a mano en el editor SQL; v3–v10 vía el conector de Supabase). Funciones vivas en la BD: `registrar_venta`, `anular_venta`, `crear_admin_inicial`.
+Todas (v2–v11) **están aplicadas** en producción (v2 a mano en el editor SQL; v3–v11 vía el conector de Supabase). Funciones vivas en la BD: `registrar_venta`, `anular_venta`, `crear_admin_inicial`.
 
 ## Flujo con la CLI
 

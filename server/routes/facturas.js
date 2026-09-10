@@ -56,6 +56,7 @@ router.get(
   "/metodos-pago",
   verifyToken,
   asyncHandler(async (_req, res) => {
+    res.set("Cache-Control", "private, max-age=300");
     res.json(await facturasService.metodosPago());
   }),
 );

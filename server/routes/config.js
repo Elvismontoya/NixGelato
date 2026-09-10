@@ -13,6 +13,8 @@ router.get(
   "/",
   verifyToken,
   asyncHandler(async (_req, res) => {
+    // Cambia poco durante una jornada; el ticket la pide en cada venta.
+    res.set("Cache-Control", "private, max-age=60");
     res.json(await configService.obtener());
   }),
 );

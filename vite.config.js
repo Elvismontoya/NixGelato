@@ -8,4 +8,14 @@ export default defineConfig({
       '/api': { target: 'http://localhost:4000', changeOrigin: true },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Vendores que no cambian entre despliegues → chunk cacheable aparte.
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
 });

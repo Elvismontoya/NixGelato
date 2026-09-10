@@ -13,6 +13,7 @@ router.get(
   "/",
   verifyToken,
   asyncHandler(async (_req, res) => {
+    res.set("Cache-Control", "private, max-age=30");
     res.json(await categoriasService.listar());
   }),
 );
