@@ -5,25 +5,39 @@ import { desglosarVenta, IVA_PORCENTAJE } from "../domain/ticket.js";
 
 // Valores por defecto si aún no se cargó la config del negocio.
 const NEGOCIO_DEFAULT = {
-  nombre:     "NixGelato",
-  nit:        "",
-  direccion:  "",
-  telefono:   "",
-  regimen:    "Responsable de IVA",
+  nombre: "NixGelato",
+  nit: "",
+  direccion: "",
+  telefono: "",
+  regimen: "Responsable de IVA",
   iva_porcentaje: IVA_PORCENTAJE,
   pie_ticket: "¡Gracias por tu compra!",
 };
 
 export default function Ticket({ venta, negocio }) {
-  if (!venta) return null
+  if (!venta) return null;
 
-  const N = { ...NEGOCIO_DEFAULT, ...(negocio || venta.negocio || {}) }
-  const { id_factura, fecha, cliente, empleado, items, total, metodoPago, pago, cambio } = venta
+  const N = { ...NEGOCIO_DEFAULT, ...(negocio || venta.negocio || {}) };
+  const {
+    id_factura,
+    fecha,
+    cliente,
+    empleado,
+    items,
+    total,
+    metodoPago,
+    pago,
+    cambio,
+  } = venta;
 
-  const tarifaConfig = Number(N.iva_porcentaje) || IVA_PORCENTAJE
-  const { base: baseGravable, iva: valorIva, tarifa } = desglosarVenta(venta, tarifaConfig)
+  const tarifaConfig = Number(N.iva_porcentaje) || IVA_PORCENTAJE;
+  const {
+    base: baseGravable,
+    iva: valorIva,
+    tarifa,
+  } = desglosarVenta(venta, tarifaConfig);
   // `tarifa` viene null cuando el IVA se calculó por producto (posiblemente varias tarifas).
-  const etiquetaIva = tarifa == null ? "IVA" : `IVA (${tarifa}%)`
+  const etiquetaIva = tarifa == null ? "IVA" : `IVA (${tarifa}%)`;
 
   return (
     <div className="ticket-print">
@@ -38,17 +52,27 @@ export default function Ticket({ venta, negocio }) {
 
       <div className="ticket-divider" />
 
-      <div className="ticket-doc-title">
-        DOCUMENTO EQUIVALENTE DE VENTA
-      </div>
+      <div className="ticket-doc-title">DOCUMENTO EQUIVALENTE DE VENTA</div>
 
       <div className="ticket-divider" />
 
       <div className="ticket-info">
-        <div><strong>No.</strong> {id_factura}</div>
-        <div><strong>Fecha:</strong> {fecha}</div>
-        {empleado && <div><strong>Atendido por:</strong> {empleado}</div>}
-        {cliente && <div><strong>Cliente:</strong> {cliente}</div>}
+        <div>
+          <strong>No.</strong> {id_factura}
+        </div>
+        <div>
+          <strong>Fecha:</strong> {fecha}
+        </div>
+        {empleado && (
+          <div>
+            <strong>Atendido por:</strong> {empleado}
+          </div>
+        )}
+        {cliente && (
+          <div>
+            <strong>Cliente:</strong> {cliente}
+          </div>
+        )}
       </div>
 
       <div className="ticket-divider" />
@@ -56,9 +80,9 @@ export default function Ticket({ venta, negocio }) {
       <table className="ticket-table">
         <thead>
           <tr>
-            <th style={{ textAlign: 'left' }}>Producto</th>
-            <th style={{ textAlign: 'center' }}>Cant</th>
-            <th style={{ textAlign: 'right' }}>Subt.</th>
+            <th style={{ textAlign: "left" }}>Producto</th>
+            <th style={{ textAlign: "center" }}>Cant</th>
+            <th style={{ textAlign: "right" }}>Subt.</th>
           </tr>
         </thead>
         <tbody>
@@ -67,11 +91,13 @@ export default function Ticket({ venta, negocio }) {
               <td>
                 {item.nombre}
                 {item.toppings?.length > 0 && (
-                  <div className="ticket-toppings">+ {item.toppings.join(", ")}</div>
+                  <div className="ticket-toppings">
+                    + {item.toppings.join(", ")}
+                  </div>
                 )}
               </td>
-              <td style={{ textAlign: 'center' }}>{item.cantidad}</td>
-              <td style={{ textAlign: 'right' }}>{money(item.subtotal)}</td>
+              <td style={{ textAlign: "center" }}>{item.cantidad}</td>
+              <td style={{ textAlign: "right" }}>{money(item.subtotal)}</td>
             </tr>
           ))}
         </tbody>
@@ -194,5 +220,5 @@ export default function Ticket({ venta, negocio }) {
         }
       `}</style>
     </div>
-  )
+  );
 }

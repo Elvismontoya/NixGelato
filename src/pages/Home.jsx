@@ -7,7 +7,7 @@ export default function Home() {
   // Rotación de métricas destacadas
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentMetric(prev => (prev + 1) % 3);
+      setCurrentMetric((prev) => (prev + 1) % 3);
     }, 3000);
     return () => clearInterval(interval);
   }, []);
@@ -15,7 +15,7 @@ export default function Home() {
   const metrics = [
     { value: "2", label: "Roles de usuario" },
     { value: "100%", label: "En la nube" },
-    { value: "∞", label: "Productos posibles" }
+    { value: "∞", label: "Productos posibles" },
   ];
 
   return (
@@ -23,8 +23,13 @@ export default function Home() {
       {/* Navbar mejorada */}
       <nav className="navbar navbar-expand-lg border-bottom sticky-top">
         <div className="container">
-          <Link className="navbar-brand fw-bold" to="/">🍨 NixGelato</Link>
-          <Link className="btn btn-brand btn-sm px-3 py-2 fw-semibold shadow-sm" to="/login">
+          <Link className="navbar-brand fw-bold" to="/">
+            🍨 NixGelato
+          </Link>
+          <Link
+            className="btn btn-brand btn-sm px-3 py-2 fw-semibold shadow-sm"
+            to="/login"
+          >
             Iniciar sesión
           </Link>
         </div>
@@ -43,13 +48,16 @@ export default function Home() {
               ¡Bienvenido a <span className="text-primary">NixGelato</span>!
             </h1>
             <p className="lead mb-4 fs-5">
-              Administra fácilmente los pedidos de tu heladería con una
-              interfaz moderna, rápida y adaptable. Controla sabores,
-              toppings y cobros en cuestión de segundos.
+              Administra fácilmente los pedidos de tu heladería con una interfaz
+              moderna, rápida y adaptable. Controla sabores, toppings y cobros
+              en cuestión de segundos.
             </p>
 
             <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center justify-content-lg-start">
-              <Link to="/login" className="btn btn-brand btn-lg px-4 py-3 fw-semibold shadow">
+              <Link
+                to="/login"
+                className="btn btn-brand btn-lg px-4 py-3 fw-semibold shadow"
+              >
                 Comenzar ahora
               </Link>
             </div>
@@ -80,13 +88,15 @@ export default function Home() {
                     <div className="bg-primary bg-opacity-10 rounded p-2 me-3">
                       <span className="text-primary fs-4">❓</span>
                     </div>
-                    <h5 className="card-title mb-0 fw-bold">¿Qué es NixGelato?</h5>
+                    <h5 className="card-title mb-0 fw-bold">
+                      ¿Qué es NixGelato?
+                    </h5>
                   </div>
                   <p className="mb-3">
                     Es una aplicación diseñada para gestionar los procesos de
-                    venta en heladerías. Permite tomar pedidos, calcular
-                    totales automáticamente y simplificar el flujo de trabajo
-                    del cajero.
+                    venta en heladerías. Permite tomar pedidos, calcular totales
+                    automáticamente y simplificar el flujo de trabajo del
+                    cajero.
                   </p>
                   <ul className="list-unstyled">
                     <li className="mb-2">
@@ -113,9 +123,13 @@ export default function Home() {
                     <div className="bg-primary bg-opacity-10 rounded p-2 me-3">
                       <span className="text-primary fs-4">🚀</span>
                     </div>
-                    <h5 className="card-title mb-0 fw-bold">Escalable a futuro</h5>
+                    <h5 className="card-title mb-0 fw-bold">
+                      Escalable a futuro
+                    </h5>
                   </div>
-                  <p className="mb-3">Esta versión está pensada para crecer con tu negocio:</p>
+                  <p className="mb-3">
+                    Esta versión está pensada para crecer con tu negocio:
+                  </p>
                   <ul className="list-unstyled">
                     <li className="mb-2">
                       <span className="text-primary me-2">✓</span>
@@ -142,20 +156,26 @@ export default function Home() {
           <div className="row g-4">
             <div className="col-md-4">
               <div className="card card-soft h-100 text-center p-4 border-0 shadow-sm hover-lift">
-                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '70px', height: '70px' }}>
+                <div
+                  className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                  style={{ width: "70px", height: "70px" }}
+                >
                   <div className="fs-2">⚡</div>
                 </div>
                 <h5 className="mb-3 fw-bold">Pedidos rápidos</h5>
                 <p className="mb-0">
-                  Registra pedidos en segundos con un flujo pensado para
-                  cajas ocupadas y filas largas.
+                  Registra pedidos en segundos con un flujo pensado para cajas
+                  ocupadas y filas largas.
                 </p>
               </div>
             </div>
 
             <div className="col-md-4">
               <div className="card card-soft h-100 text-center p-4 border-0 shadow-sm hover-lift">
-                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '70px', height: '70px' }}>
+                <div
+                  className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                  style={{ width: "70px", height: "70px" }}
+                >
                   <div className="fs-2">📊</div>
                 </div>
                 <h5 className="mb-3 fw-bold">Todo bajo control</h5>
@@ -168,13 +188,16 @@ export default function Home() {
 
             <div className="col-md-4">
               <div className="card card-soft h-100 text-center p-4 border-0 shadow-sm hover-lift">
-                <div className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '70px', height: '70px' }}>
+                <div
+                  className="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                  style={{ width: "70px", height: "70px" }}
+                >
                   <div className="fs-2">🧩</div>
                 </div>
                 <h5 className="mb-3 fw-bold">Flexible y modular</h5>
                 <p className="mb-0">
-                  Agrega nuevos productos, categorías y toppings sin cambiar
-                  la forma de trabajar de tu equipo.
+                  Agrega nuevos productos, categorías y toppings sin cambiar la
+                  forma de trabajar de tu equipo.
                 </p>
               </div>
             </div>
@@ -187,17 +210,15 @@ export default function Home() {
             ¿Cómo funciona NixGelato?
           </h2>
           <div className="row g-4">
-
             {/* Paso 1 */}
             <div className="col-md-4">
               <div className="card card-soft h-100 border-0 shadow-sm hover-lift position-relative">
-                <div className="position-absolute top-0 start-0 mt-3 ms-3">
-                </div>
+                <div className="position-absolute top-0 start-0 mt-3 ms-3"></div>
                 <div className="card-body p-4 pt-5">
                   <h5 className="fw-bold mb-3">Configura tu heladería</h5>
                   <p className="mb-0">
-                    Crea tus categorías, productos y toppings desde el panel
-                    de administración.
+                    Crea tus categorías, productos y toppings desde el panel de
+                    administración.
                   </p>
                 </div>
               </div>
@@ -206,13 +227,12 @@ export default function Home() {
             {/* Paso 2 */}
             <div className="col-md-4">
               <div className="card card-soft h-100 border-0 shadow-sm hover-lift position-relative">
-                <div className="position-absolute top-0 start-0 mt-3 ms-3">
-                </div>
+                <div className="position-absolute top-0 start-0 mt-3 ms-3"></div>
                 <div className="card-body p-4 pt-5">
                   <h5 className="fw-bold mb-3">Toma el pedido</h5>
                   <p className="mb-0">
-                    El cajero selecciona el producto, ajusta cantidades y
-                    añade toppings opcionales.
+                    El cajero selecciona el producto, ajusta cantidades y añade
+                    toppings opcionales.
                   </p>
                 </div>
               </div>
@@ -221,18 +241,16 @@ export default function Home() {
             {/* Paso 3 */}
             <div className="col-md-4">
               <div className="card card-soft h-100 border-0 shadow-sm hover-lift position-relative">
-                <div className="position-absolute top-0 start-0 mt-3 ms-3">
-                </div>
+                <div className="position-absolute top-0 start-0 mt-3 ms-3"></div>
                 <div className="card-body p-4 pt-5">
                   <h5 className="fw-bold mb-3">Cobra y registra la venta</h5>
                   <p className="mb-0">
-                    El sistema calcula el total, aplica descuentos y guarda
-                    la factura con el método de pago elegido.
+                    El sistema calcula el total, aplica descuentos y guarda la
+                    factura con el método de pago elegido.
                   </p>
                 </div>
               </div>
             </div>
-
           </div>
         </section>
 
@@ -243,7 +261,8 @@ export default function Home() {
               <div className="row align-items-center">
                 <div className="col-md-8 text-center text-md-start">
                   <h5 className="fw-bold mb-2">
-                    <span className="me-2">🍦</span> Pensado para heladerías reales
+                    <span className="me-2">🍦</span> Pensado para heladerías
+                    reales
                   </h5>
                   <p className="mb-0 text-muted">
                     Ideal para proyectos académicos, pruebas con clientes o la
@@ -256,7 +275,9 @@ export default function Home() {
                       <div className="h3 mb-0 fw-bold text-primary metric-transition">
                         {metrics[currentMetric].value}
                       </div>
-                      <small className="text-muted">{metrics[currentMetric].label}</small>
+                      <small className="text-muted">
+                        {metrics[currentMetric].label}
+                      </small>
                     </div>
                   </div>
                 </div>
@@ -267,25 +288,30 @@ export default function Home() {
 
         {/* TESTIMONIOS mejorados */}
         <section className="mb-5">
-          <h2 className="h3 fw-bold text-center mb-5">Lo que dicen nuestros usuarios</h2>
+          <h2 className="h3 fw-bold text-center mb-5">
+            Lo que dicen nuestros usuarios
+          </h2>
           <div className="row g-4">
-
             <div className="col-md-6">
               <div className="card card-soft border-0 shadow-sm p-4">
                 <div className="d-flex align-items-center mb-3">
-                  <div className="rounded-circle bg-primary bg-opacity-10 d-flex 
+                  <div
+                    className="rounded-circle bg-primary bg-opacity-10 d-flex 
             align-items-center justify-content-center me-3"
-                    style={{ width: "50px", height: "50px" }}>
+                    style={{ width: "50px", height: "50px" }}
+                  >
                     <span className="fs-4">👩‍🍳</span>
                   </div>
                   <div>
                     <h6 className="mb-0 fw-bold">Ana Rodríguez</h6>
-                    <small className="text-muted">Heladería "Dulce Sabor"</small>
+                    <small className="text-muted">
+                      Heladería "Dulce Sabor"
+                    </small>
                   </div>
                 </div>
                 <p className="mb-0">
-                  "NixGelato ha simplificado nuestro proceso de ventas. Ahora atendemos
-                  a más clientes en menos tiempo y con menos errores."
+                  "NixGelato ha simplificado nuestro proceso de ventas. Ahora
+                  atendemos a más clientes en menos tiempo y con menos errores."
                 </p>
               </div>
             </div>
@@ -293,23 +319,26 @@ export default function Home() {
             <div className="col-md-6">
               <div className="card card-soft border-0 shadow-sm p-4">
                 <div className="d-flex align-items-center mb-3">
-                  <div className="rounded-circle bg-primary bg-opacity-10 d-flex 
+                  <div
+                    className="rounded-circle bg-primary bg-opacity-10 d-flex 
             align-items-center justify-content-center me-3"
-                    style={{ width: "50px", height: "50px" }}>
+                    style={{ width: "50px", height: "50px" }}
+                  >
                     <span className="fs-4">🧁</span>
                   </div>
                   <div>
                     <h6 className="mb-0 fw-bold">Carlos Méndez</h6>
-                    <small className="text-muted">Heladería "Frosty Delights"</small>
+                    <small className="text-muted">
+                      Heladería "Frosty Delights"
+                    </small>
                   </div>
                 </div>
                 <p className="mb-0">
-                  "La interfaz es tan intuitiva que nuestro personal aprendió a usarla
-                  en minutos. ¡Increíble para la temporada alta!"
+                  "La interfaz es tan intuitiva que nuestro personal aprendió a
+                  usarla en minutos. ¡Increíble para la temporada alta!"
                 </p>
               </div>
             </div>
-
           </div>
         </section>
       </main>
@@ -355,7 +384,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
     </>
   );
 }

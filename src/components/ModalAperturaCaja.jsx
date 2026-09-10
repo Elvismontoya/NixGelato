@@ -1,85 +1,105 @@
-import { useState } from 'react'
-import { abrirCaja } from '../api/caja.js'
+import { useState } from "react";
+import { abrirCaja } from "../api/caja.js";
 
-export default function ModalAperturaCaja({ onCajaAbierta, rol = 'admin' }) {
-  const [monto,   setMonto]   = useState('')
-  const [obs,     setObs]     = useState('')
-  const [msg,     setMsg]     = useState({ text: '', type: '' })
-  const [loading, setLoading] = useState(false)
+export default function ModalAperturaCaja({ onCajaAbierta, rol = "admin" }) {
+  const [monto, setMonto] = useState("");
+  const [obs, setObs] = useState("");
+  const [msg, setMsg] = useState({ text: "", type: "" });
+  const [loading, setLoading] = useState(false);
 
-  const esAdmin = rol === 'admin'
+  const esAdmin = rol === "admin";
 
   async function handleSubmit(e) {
-    e.preventDefault()
-    const montoNum = Number(monto)
+    e.preventDefault();
+    const montoNum = Number(monto);
     if (isNaN(montoNum) || montoNum < 0) {
-      setMsg({ text: 'Ingresa un monto válido (puede ser 0)', type: 'danger' })
-      return
+      setMsg({ text: "Ingresa un monto válido (puede ser 0)", type: "danger" });
+      return;
     }
 
-    setLoading(true)
-    setMsg({ text: 'Registrando apertura...', type: 'muted' })
+    setLoading(true);
+    setMsg({ text: "Registrando apertura...", type: "muted" });
 
     try {
-      await abrirCaja({ monto_apertura: montoNum, observaciones: obs })
-      setMsg({ text: '✅ Caja abierta. ¡Buen día!', type: 'success' })
-      setTimeout(() => onCajaAbierta(), 900)
+      await abrirCaja({ monto_apertura: montoNum, observaciones: obs });
+      setMsg({ text: "✅ Caja abierta. ¡Buen día!", type: "success" });
+      setTimeout(() => onCajaAbierta(), 900);
     } catch (err) {
       // 409 = ya existe apertura hoy (otro usuario la abrió), dejar pasar
       if (err.status === 409) {
-        onCajaAbierta()
-        return
+        onCajaAbierta();
+        return;
       }
-      console.error(err)
-      setMsg({ text: err.message || 'Error al registrar apertura', type: 'danger' })
+      console.error(err);
+      setMsg({
+        text: err.message || "Error al registrar apertura",
+        type: "danger",
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   return (
     <>
       {/* Backdrop que bloquea todo */}
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 1050,
-        background: 'rgba(0,0,0,0.75)',
-        backdropFilter: 'blur(4px)',
-      }} />
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 1050,
+          background: "rgba(0,0,0,0.75)",
+          backdropFilter: "blur(4px)",
+        }}
+      />
 
       {/* Modal centrado */}
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 1055,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '1rem',
-      }}>
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 1055,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "1rem",
+        }}
+      >
         <div
           className="card border-0 shadow-lg"
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-apertura-titulo"
-          style={{ width: '100%', maxWidth: '440px', borderRadius: '1.25rem' }}
+          style={{ width: "100%", maxWidth: "440px", borderRadius: "1.25rem" }}
         >
           <div className="card-body p-4">
-
             {/* Header */}
             <div className="text-center mb-4">
-              <div style={{ fontSize: '2.5rem' }} aria-hidden="true">💰</div>
-              <h4 className="fw-bold mb-1 mt-2" id="modal-apertura-titulo">Apertura de caja</h4>
+              <div style={{ fontSize: "2.5rem" }} aria-hidden="true">
+                💰
+              </div>
+              <h4 className="fw-bold mb-1 mt-2" id="modal-apertura-titulo">
+                Apertura de caja
+              </h4>
               <p className="text-muted small mb-0">
                 {esAdmin
-                  ? 'Ingresa el dinero disponible en caja para comenzar el día.'
-                  : 'La caja no ha sido abierta aún. Ingresa el efectivo disponible para continuar.'}
+                  ? "Ingresa el dinero disponible en caja para comenzar el día."
+                  : "La caja no ha sido abierta aún. Ingresa el efectivo disponible para continuar."}
               </p>
             </div>
 
             {/* Fecha */}
             <div
               className="text-center mb-4 py-2 rounded"
-              style={{ background: 'var(--bg-soft, #f8f9fa)' }}
+              style={{ background: "var(--bg-soft, #f8f9fa)" }}
             >
               <span className="small text-muted">
-                📅 {new Date().toLocaleDateString('es-CO', {
-                  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                📅{" "}
+                {new Date().toLocaleDateString("es-CO", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
                 })}
               </span>
             </div>
@@ -103,7 +123,9 @@ export default function ModalAperturaCaja({ onCajaAbierta, rol = 'admin' }) {
                     autoFocus
                   />
                 </div>
-                <div className="form-text">Si no hay dinero inicial, ingresa 0.</div>
+                <div className="form-text">
+                  Si no hay dinero inicial, ingresa 0.
+                </div>
               </div>
 
               <div className="mb-4">
@@ -120,7 +142,9 @@ export default function ModalAperturaCaja({ onCajaAbierta, rol = 'admin' }) {
               </div>
 
               {msg.text && (
-                <div className={`alert py-2 mb-3 alert-${msg.type === 'danger' ? 'danger' : msg.type === 'success' ? 'success' : 'secondary'}`}>
+                <div
+                  className={`alert py-2 mb-3 alert-${msg.type === "danger" ? "danger" : msg.type === "success" ? "success" : "secondary"}`}
+                >
                   {msg.text}
                 </div>
               )}
@@ -130,9 +154,14 @@ export default function ModalAperturaCaja({ onCajaAbierta, rol = 'admin' }) {
                 className="btn btn-brand w-100 btn-lg"
                 disabled={loading}
               >
-                {loading
-                  ? <><span className="spinner-border spinner-border-sm me-2" />Registrando...</>
-                  : '🌅 Abrir caja y continuar'}
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    Registrando...
+                  </>
+                ) : (
+                  "🌅 Abrir caja y continuar"
+                )}
               </button>
             </form>
 
@@ -143,5 +172,5 @@ export default function ModalAperturaCaja({ onCajaAbierta, rol = 'admin' }) {
         </div>
       </div>
     </>
-  )
+  );
 }

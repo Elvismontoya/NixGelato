@@ -1,13 +1,21 @@
 import { money } from "../../domain/money.js";
 import {
-  idProducto, nombreProducto, precioProducto, stockProducto, permiteToppings,
+  idProducto,
+  nombreProducto,
+  precioProducto,
+  stockProducto,
+  permiteToppings,
 } from "../../domain/producto.js";
 
 // Panel izquierdo del POS: buscador + resultados + grilla por categorías.
 // Presentacional: `busqueda`, `productosFiltrados` y `categorias` vienen del
 // contenedor, que también decide la selección.
 export default function MenuProductos({
-  busqueda, setBusqueda, productosFiltrados, categorias, onSeleccionar,
+  busqueda,
+  setBusqueda,
+  productosFiltrados,
+  categorias,
+  onSeleccionar,
 }) {
   return (
     <>
@@ -18,11 +26,20 @@ export default function MenuProductos({
           <div className="input-group">
             <span className="input-group-text">🔍</span>
             <input
-              type="text" className="form-control" placeholder="Buscar producto..."
-              value={busqueda} onChange={(e) => setBusqueda(e.target.value)} autoComplete="off"
+              type="text"
+              className="form-control"
+              placeholder="Buscar producto..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              autoComplete="off"
             />
             {busqueda && (
-              <button className="btn btn-outline-secondary" onClick={() => setBusqueda("")}>✕</button>
+              <button
+                className="btn btn-outline-secondary"
+                onClick={() => setBusqueda("")}
+              >
+                ✕
+              </button>
             )}
           </div>
         </div>
@@ -32,7 +49,9 @@ export default function MenuProductos({
       {busqueda && (
         <div className="mb-4">
           {productosFiltrados.length === 0 ? (
-            <p className="text-muted text-center py-3">Sin resultados para "{busqueda}"</p>
+            <p className="text-muted text-center py-3">
+              Sin resultados para "{busqueda}"
+            </p>
           ) : (
             <div className="row g-2">
               {productosFiltrados.map((p) => {
@@ -45,16 +64,30 @@ export default function MenuProductos({
                     >
                       <div className="card-body p-3 d-flex align-items-center gap-3">
                         <img
-                          src={p.img || ""} alt={nombreProducto(p)}
-                          style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }}
-                          onError={(e) => { e.target.style.display = "none"; }}
+                          src={p.img || ""}
+                          alt={nombreProducto(p)}
+                          style={{
+                            width: 48,
+                            height: 48,
+                            objectFit: "cover",
+                            borderRadius: 8,
+                          }}
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                          }}
                         />
                         <div className="flex-grow-1 min-w-0">
-                          <div className="fw-semibold small text-truncate">{nombreProducto(p)}</div>
+                          <div className="fw-semibold small text-truncate">
+                            {nombreProducto(p)}
+                          </div>
                           <div className="small text-muted">{p._catNombre}</div>
-                          <div className="fw-bold text-success small">{money(precioProducto(p))}</div>
+                          <div className="fw-bold text-success small">
+                            {money(precioProducto(p))}
+                          </div>
                         </div>
-                        <span className={`badge ${stock > 0 ? "bg-success" : "bg-danger"}`}>
+                        <span
+                          className={`badge ${stock > 0 ? "bg-success" : "bg-danger"}`}
+                        >
                           {stock <= 0 ? "Agotado" : stock}
                         </span>
                       </div>
@@ -74,28 +107,38 @@ export default function MenuProductos({
             <section key={cat.id ?? cat.id_categoria} className="mb-5">
               <div className="d-flex align-items-center gap-2 mb-3">
                 <h5 className="fw-bold mb-0">{cat.nombre}</h5>
-                <span className="badge bg-light text-dark border">{cat.productos?.length ?? 0}</span>
+                <span className="badge bg-light text-dark border">
+                  {cat.productos?.length ?? 0}
+                </span>
               </div>
               <div className="row g-3">
                 {(cat.productos ?? []).map((p) => {
                   const stock = stockProducto(p);
                   const sinStock = stock <= 0;
                   return (
-                    <div className="col-xxl-3 col-lg-4 col-md-6" key={idProducto(p)}>
+                    <div
+                      className="col-xxl-3 col-lg-4 col-md-6"
+                      key={idProducto(p)}
+                    >
                       <div
                         className={`product-card card border-0 h-100 ${sinStock ? "opacity-50" : "hover-lift cursor-pointer"}`}
                         onClick={() => !sinStock && onSeleccionar(p)}
                       >
                         <div className="product-image-container position-relative">
                           <img
-                            src={p.img || ""} alt={nombreProducto(p)} className="product-image"
+                            src={p.img || ""}
+                            alt={nombreProducto(p)}
+                            className="product-image"
                             onError={(e) => {
-                              e.target.parentElement.style.background = "#f8f9fa";
+                              e.target.parentElement.style.background =
+                                "#f8f9fa";
                               e.target.style.display = "none";
                             }}
                           />
                           <div className="product-overlay">
-                            <span className={`badge ${sinStock ? "bg-danger" : "bg-success"}`}>
+                            <span
+                              className={`badge ${sinStock ? "bg-danger" : "bg-success"}`}
+                            >
                               {sinStock ? "Agotado" : `Stock: ${stock}`}
                             </span>
                           </div>
@@ -106,8 +149,15 @@ export default function MenuProductos({
                           )}
                         </div>
                         <div className="card-body p-3">
-                          <h6 className="fw-semibold mb-1" style={{ fontSize: "0.88rem" }}>{nombreProducto(p)}</h6>
-                          <div className="fw-bold text-success">{money(precioProducto(p))}</div>
+                          <h6
+                            className="fw-semibold mb-1"
+                            style={{ fontSize: "0.88rem" }}
+                          >
+                            {nombreProducto(p)}
+                          </h6>
+                          <div className="fw-bold text-success">
+                            {money(precioProducto(p))}
+                          </div>
                         </div>
                       </div>
                     </div>

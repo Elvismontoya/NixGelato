@@ -2,5 +2,5 @@
 export function crearToppingsService({ toppingsRepo }) {
   return {
     listar: () => toppingsRepo.listActive(),
-  }
+  };
 }

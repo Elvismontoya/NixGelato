@@ -1,72 +1,92 @@
 // Modal de confirmación reutilizable
 // Uso: <ModalConfirmar config={modalConfig} onConfirm={fn} onCancel={fn} />
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef } from "react";
 
 export default function ModalConfirmar({ config, onConfirm, onCancel }) {
-  const okRef = useRef(null)
+  const okRef = useRef(null);
 
   // Cerrar con Escape + enfocar el botón de acción al abrir.
   useEffect(() => {
-    if (!config) return
-    okRef.current?.focus()
+    if (!config) return;
+    okRef.current?.focus();
     function onKey(e) {
-      if (e.key === 'Escape' && !config.loading) onCancel?.()
+      if (e.key === "Escape" && !config.loading) onCancel?.();
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [config, onCancel])
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [config, onCancel]);
 
-  if (!config) return null
+  if (!config) return null;
 
   const {
-    titulo    = '¿Estás seguro?',
-    mensaje   = 'Esta acción no se puede deshacer.',
-    detalle   = null,       // nombre del elemento a eliminar
-    tipo      = 'danger',   // danger | warning | info
-    txtOk     = 'Confirmar',
-    txtCancel = 'Cancelar',
-    loading   = false,
-  } = config
+    titulo = "¿Estás seguro?",
+    mensaje = "Esta acción no se puede deshacer.",
+    detalle = null, // nombre del elemento a eliminar
+    tipo = "danger", // danger | warning | info
+    txtOk = "Confirmar",
+    txtCancel = "Cancelar",
+    loading = false,
+  } = config;
 
-  const iconos = { danger: '🗑️', warning: '⚠️', info: 'ℹ️' }
+  const iconos = { danger: "🗑️", warning: "⚠️", info: "ℹ️" };
 
   return (
     <>
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 1060,
-        background: 'rgba(0,0,0,0.55)',
-        backdropFilter: 'blur(2px)',
-      }} onClick={!loading ? onCancel : undefined} />
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 1060,
+          background: "rgba(0,0,0,0.55)",
+          backdropFilter: "blur(2px)",
+        }}
+        onClick={!loading ? onCancel : undefined}
+      />
 
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 1065,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '1rem',
-        pointerEvents: 'none',
-      }}>
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 1065,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "1rem",
+          pointerEvents: "none",
+        }}
+      >
         <div
           className="card border-0 shadow-lg"
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-confirmar-titulo"
           style={{
-            width: '100%', maxWidth: '420px',
-            borderRadius: '1.25rem',
-            pointerEvents: 'all',
+            width: "100%",
+            maxWidth: "420px",
+            borderRadius: "1.25rem",
+            pointerEvents: "all",
           }}
         >
           <div className="card-body p-4 text-center">
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }} aria-hidden="true">
-              {iconos[tipo] || '⚠️'}
+            <div
+              style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}
+              aria-hidden="true"
+            >
+              {iconos[tipo] || "⚠️"}
             </div>
-            <h5 className="fw-bold mb-2" id="modal-confirmar-titulo">{titulo}</h5>
+            <h5 className="fw-bold mb-2" id="modal-confirmar-titulo">
+              {titulo}
+            </h5>
             <p className="text-muted mb-1">{mensaje}</p>
 
             {detalle && (
               <div
                 className="mt-2 mb-3 px-3 py-2 rounded fw-semibold"
-                style={{ background: 'var(--bg-soft, #f8f9fa)', fontSize: '0.95rem' }}
+                style={{
+                  background: "var(--bg-soft, #f8f9fa)",
+                  fontSize: "0.95rem",
+                }}
               >
                 {detalle}
               </div>
@@ -86,14 +106,19 @@ export default function ModalConfirmar({ config, onConfirm, onCancel }) {
                 onClick={onConfirm}
                 disabled={loading}
               >
-                {loading
-                  ? <><span className="spinner-border spinner-border-sm me-2" />Procesando...</>
-                  : txtOk}
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    Procesando...
+                  </>
+                ) : (
+                  txtOk
+                )}
               </button>
             </div>
           </div>
         </div>
       </div>
     </>
-  )
+  );
 }

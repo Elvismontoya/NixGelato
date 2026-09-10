@@ -19,31 +19,47 @@ export default function DashboardTab({ dash, loading, onReload }) {
 
   const metricas = [
     {
-      icon: "💵", label: "Ingresos hoy",
+      icon: "💵",
+      label: "Ingresos hoy",
       value: money(dash?.ingresosHoy?.ingresos_totales ?? 0),
-      sub: `${dash?.ingresosHoy?.total_ventas ?? 0} ventas`, color: "text-success",
+      sub: `${dash?.ingresosHoy?.total_ventas ?? 0} ventas`,
+      color: "text-success",
     },
     {
-      icon: "🧾", label: "Promedio x venta",
-      value: money(dash?.ingresosHoy?.promedio_venta ?? 0), sub: "Hoy", color: "text-brand",
+      icon: "🧾",
+      label: "Promedio x venta",
+      value: money(dash?.ingresosHoy?.promedio_venta ?? 0),
+      sub: "Hoy",
+      color: "text-brand",
     },
     {
-      icon: "📦", label: "Stock crítico",
-      value: stockBajo.length, sub: "Productos bajo mínimo",
+      icon: "📦",
+      label: "Stock crítico",
+      value: stockBajo.length,
+      sub: "Productos bajo mínimo",
       color: stockBajo.length > 0 ? "text-danger" : "text-success",
     },
     {
-      icon: "💰", label: "Caja hoy",
-      value: dash?.estadoCaja?.apertura ? money(dash.estadoCaja.apertura.monto_apertura) : "Sin apertura",
-      sub: dash?.estadoCaja?.apertura?.estado === "abierta" ? "🟢 Abierta"
-        : dash?.estadoCaja?.apertura?.estado === "cerrada" ? "🔴 Cerrada" : "⚪ Sin registrar",
+      icon: "💰",
+      label: "Caja hoy",
+      value: dash?.estadoCaja?.apertura
+        ? money(dash.estadoCaja.apertura.monto_apertura)
+        : "Sin apertura",
+      sub:
+        dash?.estadoCaja?.apertura?.estado === "abierta"
+          ? "🟢 Abierta"
+          : dash?.estadoCaja?.apertura?.estado === "cerrada"
+            ? "🔴 Cerrada"
+            : "⚪ Sin registrar",
       color: "text-gradient",
     },
   ];
 
   const hoyStr = new Date().toISOString().split("T")[0];
   const maxVal = Math.max(...semana.map((d) => d.ingresos_totales), 1);
-  const dias = [...semana].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+  const dias = [...semana].sort(
+    (a, b) => new Date(a.fecha) - new Date(b.fecha),
+  );
   const mejorDia = semana.length
     ? [...semana].sort((a, b) => b.ingresos_totales - a.ingresos_totales)[0]
     : null;
@@ -71,32 +87,70 @@ export default function DashboardTab({ dash, loading, onReload }) {
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h6 className="fw-bold mb-0">📈 Ingresos últimos 7 días</h6>
-                <button className="btn btn-sm btn-outline-secondary" onClick={onReload}>🔄</button>
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={onReload}
+                >
+                  🔄
+                </button>
               </div>
               {semana.length === 0 ? (
-                <div className="text-center text-muted py-4">Sin ventas en los últimos 7 días</div>
+                <div className="text-center text-muted py-4">
+                  Sin ventas en los últimos 7 días
+                </div>
               ) : (
-                <div className="d-flex align-items-end gap-2" style={{ height: 180 }}>
+                <div
+                  className="d-flex align-items-end gap-2"
+                  style={{ height: 180 }}
+                >
                   {dias.map((d, i) => {
-                    const pct = Math.max((d.ingresos_totales / maxVal) * 100, 4);
+                    const pct = Math.max(
+                      (d.ingresos_totales / maxVal) * 100,
+                      4,
+                    );
                     const fecha = new Date(d.fecha + "T12:00:00");
                     const esHoy = d.fecha === hoyStr;
                     return (
-                      <div key={i} className="d-flex flex-column align-items-center flex-grow-1" style={{ height: "100%" }}>
-                        <div className="small text-muted mb-1" style={{ fontSize: "0.65rem" }}>
+                      <div
+                        key={i}
+                        className="d-flex flex-column align-items-center flex-grow-1"
+                        style={{ height: "100%" }}
+                      >
+                        <div
+                          className="small text-muted mb-1"
+                          style={{ fontSize: "0.65rem" }}
+                        >
                           {money(d.ingresos_totales).replace("COP", "").trim()}
                         </div>
-                        <div className="w-100 rounded-top position-relative" style={{
-                          height: `${pct}%`,
-                          background: esHoy
-                            ? "linear-gradient(180deg, var(--sky, #6cd2f7), var(--aqua, #91eed3))"
-                            : "rgba(108, 210, 247, 0.35)",
-                          minHeight: 8, transition: "height .4s ease",
-                        }} title={`${d.total_ventas} ventas · ${money(d.ingresos_totales)}`} />
-                        <div className="small text-muted mt-1" style={{ fontSize: "0.65rem" }}>
-                          {fecha.toLocaleDateString("es-CO", { weekday: "short" })}
+                        <div
+                          className="w-100 rounded-top position-relative"
+                          style={{
+                            height: `${pct}%`,
+                            background: esHoy
+                              ? "linear-gradient(180deg, var(--sky, #6cd2f7), var(--aqua, #91eed3))"
+                              : "rgba(108, 210, 247, 0.35)",
+                            minHeight: 8,
+                            transition: "height .4s ease",
+                          }}
+                          title={`${d.total_ventas} ventas · ${money(d.ingresos_totales)}`}
+                        />
+                        <div
+                          className="small text-muted mt-1"
+                          style={{ fontSize: "0.65rem" }}
+                        >
+                          {fecha.toLocaleDateString("es-CO", {
+                            weekday: "short",
+                          })}
                         </div>
-                        <div style={{ fontSize: "0.6rem", color: esHoy ? "var(--sky)" : "transparent", fontWeight: 700 }}>●</div>
+                        <div
+                          style={{
+                            fontSize: "0.6rem",
+                            color: esHoy ? "var(--sky)" : "transparent",
+                            fontWeight: 700,
+                          }}
+                        >
+                          ●
+                        </div>
                       </div>
                     );
                   })}
@@ -108,18 +162,33 @@ export default function DashboardTab({ dash, loading, onReload }) {
                   <div className="col-4 text-center">
                     <div className="small text-muted">Total semana</div>
                     <div className="fw-bold text-success">
-                      {money(semana.reduce((s, d) => s + Number(d.ingresos_totales), 0))}
+                      {money(
+                        semana.reduce(
+                          (s, d) => s + Number(d.ingresos_totales),
+                          0,
+                        ),
+                      )}
                     </div>
                   </div>
                   <div className="col-4 text-center">
                     <div className="small text-muted">Ventas semana</div>
-                    <div className="fw-bold">{semana.reduce((s, d) => s + Number(d.total_ventas), 0)}</div>
+                    <div className="fw-bold">
+                      {semana.reduce((s, d) => s + Number(d.total_ventas), 0)}
+                    </div>
                   </div>
                   <div className="col-4 text-center">
                     <div className="small text-muted">Mejor día</div>
-                    <div className="fw-bold text-brand" style={{ fontSize: "0.8rem" }}>
+                    <div
+                      className="fw-bold text-brand"
+                      style={{ fontSize: "0.8rem" }}
+                    >
                       {mejorDia
-                        ? new Date(mejorDia.fecha + "T12:00:00").toLocaleDateString("es-CO", { weekday: "short", day: "numeric" })
+                        ? new Date(
+                            mejorDia.fecha + "T12:00:00",
+                          ).toLocaleDateString("es-CO", {
+                            weekday: "short",
+                            day: "numeric",
+                          })
                         : "—"}
                     </div>
                   </div>
@@ -135,14 +204,18 @@ export default function DashboardTab({ dash, loading, onReload }) {
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h6 className="fw-bold mb-0">⚠️ Stock crítico</h6>
-                <span className={`badge ${stockBajo.length > 0 ? "bg-danger" : "bg-success"}`}>
+                <span
+                  className={`badge ${stockBajo.length > 0 ? "bg-danger" : "bg-success"}`}
+                >
                   {stockBajo.length}
                 </span>
               </div>
               {stockBajo.length === 0 ? (
                 <div className="text-center py-4">
                   <div style={{ fontSize: "2rem" }}>✅</div>
-                  <p className="text-success small mt-2 mb-0">Todos los productos tienen stock suficiente</p>
+                  <p className="text-success small mt-2 mb-0">
+                    Todos los productos tienen stock suficiente
+                  </p>
                 </div>
               ) : (
                 <div style={{ maxHeight: 240, overflowY: "auto" }}>
@@ -157,13 +230,19 @@ export default function DashboardTab({ dash, loading, onReload }) {
                     <tbody>
                       {stockBajo.map((p) => (
                         <tr key={p.id_producto}>
-                          <td className="small fw-semibold">{p.nombre_producto}</td>
+                          <td className="small fw-semibold">
+                            {p.nombre_producto}
+                          </td>
                           <td className="text-center">
-                            <span className={`badge ${p.stock_actual === 0 ? "bg-danger" : "bg-warning text-dark"}`}>
+                            <span
+                              className={`badge ${p.stock_actual === 0 ? "bg-danger" : "bg-warning text-dark"}`}
+                            >
                               {p.stock_actual}
                             </span>
                           </td>
-                          <td className="text-center text-muted small">{p.stock_minimo}</td>
+                          <td className="text-center text-muted small">
+                            {p.stock_minimo}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -172,7 +251,9 @@ export default function DashboardTab({ dash, loading, onReload }) {
               )}
               <button
                 className="btn btn-sm btn-outline-brand w-100 mt-2"
-                onClick={() => { window.location.href = "/admin/inventario"; }}
+                onClick={() => {
+                  window.location.href = "/admin/inventario";
+                }}
               >
                 Ver inventario completo →
               </button>

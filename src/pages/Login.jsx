@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { checkInitial, login as loginRequest, registerAdmin as registerAdminRequest } from "../api/auth.js";
+import {
+  checkInitial,
+  login as loginRequest,
+  registerAdmin as registerAdminRequest,
+} from "../api/auth.js";
 import { getToken, getRol, saveSession } from "../hooks/useSession.js";
 
 function guardarSesionYEntrar(navigate, token, rol) {
@@ -64,7 +68,10 @@ export default function Login() {
     try {
       const { ok, data } = await loginRequest(usuario.trim(), password.trim());
       if (!ok) {
-        setLoginMsg({ text: data.message || "Credenciales inválidas.", type: "danger" });
+        setLoginMsg({
+          text: data.message || "Credenciales inválidas.",
+          type: "danger",
+        });
         return;
       }
       setLoginMsg({ text: "Ingreso exitoso.", type: "success" });
@@ -76,8 +83,16 @@ export default function Login() {
 
   async function onRegisterSubmit(e) {
     e.preventDefault();
-    if (!regNombres.trim() || !regApellidos.trim() || !regUsuario.trim() || !regPassword.trim()) {
-      setRegisterMsg({ text: "Todos los campos son obligatorios.", type: "danger" });
+    if (
+      !regNombres.trim() ||
+      !regApellidos.trim() ||
+      !regUsuario.trim() ||
+      !regPassword.trim()
+    ) {
+      setRegisterMsg({
+        text: "Todos los campos son obligatorios.",
+        type: "danger",
+      });
       return;
     }
     setRegisterMsg({ text: "Creando administrador...", type: "muted" });
@@ -90,10 +105,16 @@ export default function Login() {
         password: regPassword.trim(),
       });
       if (!ok) {
-        setRegisterMsg({ text: data.message || "No se pudo crear el administrador.", type: "danger" });
+        setRegisterMsg({
+          text: data.message || "No se pudo crear el administrador.",
+          type: "danger",
+        });
         return;
       }
-      setRegisterMsg({ text: "Administrador creado. Ingresando...", type: "success" });
+      setRegisterMsg({
+        text: "Administrador creado. Ingresando...",
+        type: "success",
+      });
       guardarSesionYEntrar(navigate, data.token, data.rol);
     } finally {
       setRegisterLoading(false);
@@ -105,7 +126,9 @@ export default function Login() {
       {/* NAV */}
       <nav className="navbar navbar-expand-lg border-bottom sticky-top">
         <div className="container">
-          <Link className="navbar-brand fw-bold" to="/">🍨 NixGelato</Link>
+          <Link className="navbar-brand fw-bold" to="/">
+            🍨 NixGelato
+          </Link>
         </div>
       </nav>
 
@@ -115,24 +138,31 @@ export default function Login() {
           <div className="row g-5 align-items-center justify-content-center">
             {/* Ilustración / lado izquierdo */}
             <div className="col-12 col-lg-6">
-              <div className="card card-soft glass-effect border-0" style={{ minHeight: 420 }}>
+              <div
+                className="card card-soft glass-effect border-0"
+                style={{ minHeight: 420 }}
+              >
                 <div className="card-body d-flex flex-column justify-content-center p-5">
                   <div className="text-center mb-4">
                     <div className="display-1 mb-3">🍨</div>
                     <h1 className="display-5 fw-bold mb-3">
-                      Bienvenido a <span className="text-gradient">NixGelato</span>
+                      Bienvenido a{" "}
+                      <span className="text-gradient">NixGelato</span>
                     </h1>
                     <p className="lead text-muted mb-4">
-                      Sistema de gestión para heladería. Controla productos, pedidos y facturas con una interfaz moderna y segura.
+                      Sistema de gestión para heladería. Controla productos,
+                      pedidos y facturas con una interfaz moderna y segura.
                     </p>
                   </div>
-                  
+
                   <div className="row text-center">
                     <div className="col-md-4 mb-3">
                       <div className="p-3 rounded-lg hover-lift">
                         <div className="fs-2 mb-2">⚡</div>
                         <h6 className="fw-semibold mb-1">Rápido</h6>
-                        <small className="text-muted">Interfaz optimizada</small>
+                        <small className="text-muted">
+                          Interfaz optimizada
+                        </small>
                       </div>
                     </div>
                     <div className="col-md-4 mb-3">
@@ -146,7 +176,9 @@ export default function Login() {
                       <div className="p-3 rounded-lg hover-lift">
                         <div className="fs-2 mb-2">📊</div>
                         <h6 className="fw-semibold mb-1">En tiempo real</h6>
-                        <small className="text-muted">Estadísticas actualizadas</small>
+                        <small className="text-muted">
+                          Estadísticas actualizadas
+                        </small>
                       </div>
                     </div>
                   </div>
@@ -160,20 +192,28 @@ export default function Login() {
                 <div className="card-body p-4 p-md-5">
                   {/* Header elegante */}
                   <div className="text-center mb-4">
-                    <div className="bg-gradient-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
-                         style={{ width: '60px', height: '60px', background: 'linear-gradient(135deg, var(--sky) 0%, var(--aqua) 100%)' }}>
+                    <div
+                      className="bg-gradient-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                      style={{
+                        width: "60px",
+                        height: "60px",
+                        background:
+                          "linear-gradient(135deg, var(--sky) 0%, var(--aqua) 100%)",
+                      }}
+                    >
                       <span className="fs-4">🔐</span>
                     </div>
                     <h3 className="fw-bold mb-1">Iniciar Sesión</h3>
                     <p className="text-muted">Accede a tu cuenta</p>
                   </div>
 
-
                   {/* Login */}
                   {tab === "login" && (
                     <form onSubmit={onLoginSubmit} className="space-y-3">
                       <div className="mb-3">
-                        <label className="form-label fw-semibold">Usuario</label>
+                        <label className="form-label fw-semibold">
+                          Usuario
+                        </label>
                         <div className="input-group input-group-lg">
                           <span className="input-group-text bg-transparent border-end-0">
                             👤
@@ -189,9 +229,11 @@ export default function Login() {
                           />
                         </div>
                       </div>
-                      
+
                       <div className="mb-4">
-                        <label className="form-label fw-semibold">Contraseña</label>
+                        <label className="form-label fw-semibold">
+                          Contraseña
+                        </label>
                         <div className="input-group input-group-lg">
                           <span className="input-group-text bg-transparent border-end-0">
                             🔒
@@ -214,12 +256,14 @@ export default function Login() {
                             {showPass ? "Ocultar" : "Mostrar"}
                           </button>
                         </div>
-                        <div className="form-text text-end">¿Olvidaste tu contraseña?</div>
+                        <div className="form-text text-end">
+                          ¿Olvidaste tu contraseña?
+                        </div>
                       </div>
 
                       <div className="d-grid">
-                        <button 
-                          type="submit" 
+                        <button
+                          type="submit"
                           className="btn btn-brand btn-lg fw-semibold py-3"
                           disabled={loginLoading}
                         >
@@ -235,9 +279,18 @@ export default function Login() {
                       </div>
 
                       {loginMsg.text && (
-                        <div className={`alert alert-dismissible fade show mt-3 alert-${loginMsg.type === "danger" ? "danger" : loginMsg.type === "success" ? "success" : "secondary"}`} role="alert">
+                        <div
+                          className={`alert alert-dismissible fade show mt-3 alert-${loginMsg.type === "danger" ? "danger" : loginMsg.type === "success" ? "success" : "secondary"}`}
+                          role="alert"
+                        >
                           {loginMsg.text}
-                          <button type="button" className="btn-close" onClick={() => setLoginMsg({ text: "", type: "muted" })}></button>
+                          <button
+                            type="button"
+                            className="btn-close"
+                            onClick={() =>
+                              setLoginMsg({ text: "", type: "muted" })
+                            }
+                          ></button>
                         </div>
                       )}
                     </form>
@@ -249,12 +302,16 @@ export default function Login() {
                       <div className="alert alert-warning text-center mb-4">
                         <strong>Configuración inicial</strong>
                         <br />
-                        <small>Creando el primer administrador del sistema</small>
+                        <small>
+                          Creando el primer administrador del sistema
+                        </small>
                       </div>
-                      
+
                       <div className="row">
                         <div className="col-md-6 mb-3">
-                          <label className="form-label fw-semibold">Nombres</label>
+                          <label className="form-label fw-semibold">
+                            Nombres
+                          </label>
                           <input
                             className="form-control form-control-lg"
                             placeholder="Nombres"
@@ -264,7 +321,9 @@ export default function Login() {
                           />
                         </div>
                         <div className="col-md-6 mb-3">
-                          <label className="form-label fw-semibold">Apellidos</label>
+                          <label className="form-label fw-semibold">
+                            Apellidos
+                          </label>
                           <input
                             className="form-control form-control-lg"
                             placeholder="Apellidos"
@@ -274,9 +333,11 @@ export default function Login() {
                           />
                         </div>
                       </div>
-                      
+
                       <div className="mb-3">
-                        <label className="form-label fw-semibold">Usuario</label>
+                        <label className="form-label fw-semibold">
+                          Usuario
+                        </label>
                         <input
                           className="form-control form-control-lg"
                           placeholder="Nombre de usuario"
@@ -286,9 +347,11 @@ export default function Login() {
                           required
                         />
                       </div>
-                      
+
                       <div className="mb-4">
-                        <label className="form-label fw-semibold">Contraseña</label>
+                        <label className="form-label fw-semibold">
+                          Contraseña
+                        </label>
                         <div className="input-group input-group-lg">
                           <input
                             type={showRegPass ? "text" : "password"}
@@ -308,10 +371,10 @@ export default function Login() {
                           </button>
                         </div>
                       </div>
-                      
+
                       <div className="d-grid">
-                        <button 
-                          type="submit" 
+                        <button
+                          type="submit"
                           className="btn btn-brand btn-lg fw-semibold py-3"
                           disabled={registerLoading}
                         >
@@ -325,11 +388,20 @@ export default function Login() {
                           )}
                         </button>
                       </div>
-                      
+
                       {registerMsg.text && (
-                        <div className={`alert alert-dismissible fade show mt-3 alert-${registerMsg.type === "danger" ? "danger" : registerMsg.type === "success" ? "success" : "secondary"}`} role="alert">
+                        <div
+                          className={`alert alert-dismissible fade show mt-3 alert-${registerMsg.type === "danger" ? "danger" : registerMsg.type === "success" ? "success" : "secondary"}`}
+                          role="alert"
+                        >
                           {registerMsg.text}
-                          <button type="button" className="btn-close" onClick={() => setRegisterMsg({ text: "", type: "muted" })}></button>
+                          <button
+                            type="button"
+                            className="btn-close"
+                            onClick={() =>
+                              setRegisterMsg({ text: "", type: "muted" })
+                            }
+                          ></button>
                         </div>
                       )}
                     </form>

@@ -13,7 +13,11 @@ import { getMetodosPago, registrarVenta } from "../api/facturas.js";
 import { getPerfil } from "../api/auth.js";
 import { money } from "../domain/money.js";
 import {
-  precioConToppings, totalPedido, calcularCambio, billetesSugeridos, puedeCobrar,
+  precioConToppings,
+  totalPedido,
+  calcularCambio,
+  billetesSugeridos,
+  puedeCobrar,
 } from "../domain/pedido.js";
 import useSession from "../hooks/useSession.js";
 import {
@@ -33,27 +37,27 @@ export default function Pedido() {
   const navigate = useNavigate();
   const { token, logout } = useSession();
 
-  const [categorias,    setCategorias]    = useState([]);
-  const [toppings,      setToppings]      = useState([]);
-  const [pedido,        setPedido]        = useState([]);
-  const [cliente,       setCliente]       = useState("");
-  const [pago,          setPago]          = useState(0);
-  const [metodoPago,    setMetodoPago]    = useState("");
-  const [metodosPago,   setMetodosPago]   = useState([]);
-  const [navbarFixed,   setNavbarFixed]   = useState(false);
-  const [cargando,      setCargando]      = useState(true);
-  const [cobrandoLoad,  setCobrandoLoad]  = useState(false);
+  const [categorias, setCategorias] = useState([]);
+  const [toppings, setToppings] = useState([]);
+  const [pedido, setPedido] = useState([]);
+  const [cliente, setCliente] = useState("");
+  const [pago, setPago] = useState(0);
+  const [metodoPago, setMetodoPago] = useState("");
+  const [metodosPago, setMetodosPago] = useState([]);
+  const [navbarFixed, setNavbarFixed] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  const [cobrandoLoad, setCobrandoLoad] = useState(false);
 
   // Flujo de selección
-  const [productoSeleccionado,   setProductoSeleccionado]   = useState(null);
-  const [toppingsSeleccionados,  setToppingsSeleccionados]  = useState([]);
+  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+  const [toppingsSeleccionados, setToppingsSeleccionados] = useState([]);
 
   // Buscador
   const [busqueda, setBusqueda] = useState("");
 
   // Modales
-  const [modalVaciar,  setModalVaciar]   = useState(false);
-  const [modalExito,   setModalExito]    = useState(null); // { id_factura, total }
+  const [modalVaciar, setModalVaciar] = useState(false);
+  const [modalExito, setModalExito] = useState(null); // { id_factura, total }
   const [ventaParaTicket, setVentaParaTicket] = useState(null); // datos congelados para el ticket
   const [negocio, setNegocio] = useState(null); // config del negocio para el ticket
 
@@ -74,14 +78,16 @@ export default function Pedido() {
     getPerfil()
       .then((data) => {
         if (data?.nombres) {
-          localStorage.setItem("nombreEmpleado", `${data.nombres} ${data.apellidos || ""}`.trim());
+          localStorage.setItem(
+            "nombreEmpleado",
+            `${data.nombres} ${data.apellidos || ""}`.trim(),
+          );
         } else {
           localStorage.removeItem("nombreEmpleado");
         }
       })
       .catch(() => {});
   }, []);
-
 
   // ── Cargar datos ───────────────────────────────────────────
   async function cargarDatos() {
@@ -105,9 +111,14 @@ export default function Pedido() {
   async function cargarMetodosPago() {
     try {
       const data = await getMetodosPago();
-      setMetodosPago(Array.isArray(data)
-        ? data.map((m) => ({ id: m.id_metodo, nombre_metodo: m.nombre_metodo }))
-        : []);
+      setMetodosPago(
+        Array.isArray(data)
+          ? data.map((m) => ({
+              id: m.id_metodo,
+              nombre_metodo: m.nombre_metodo,
+            }))
+          : [],
+      );
     } catch {
       setMetodosPago([]);
     }
@@ -119,16 +130,19 @@ export default function Pedido() {
   }, []);
 
   // ── Buscador ───────────────────────────────────────────────
-  const todosLosProductos = useMemo(() =>
-    categorias.flatMap((cat) =>
-      (cat.productos ?? []).map((p) => ({ ...p, _catNombre: cat.nombre }))
-    ), [categorias]);
+  const todosLosProductos = useMemo(
+    () =>
+      categorias.flatMap((cat) =>
+        (cat.productos ?? []).map((p) => ({ ...p, _catNombre: cat.nombre })),
+      ),
+    [categorias],
+  );
 
   const productosFiltrados = useMemo(() => {
     const q = busqueda.toLowerCase().trim();
     if (!q) return [];
     return todosLosProductos.filter((p) =>
-      getProductoNombre(p).toLowerCase().includes(q)
+      getProductoNombre(p).toLowerCase().includes(q),
     );
   }, [busqueda, todosLosProductos]);
 
@@ -152,23 +166,32 @@ export default function Pedido() {
     setPedido((prev) => {
       // Si ya existe el mismo producto sin toppings → aumentar cantidad
       const idx = prev.findIndex(
-        (i) => getProductoId(i.producto) === getProductoId(producto) && i.toppings.length === 0
+        (i) =>
+          getProductoId(i.producto) === getProductoId(producto) &&
+          i.toppings.length === 0,
       );
       if (idx !== -1) {
         return prev.map((i, index) =>
           index === idx
-            ? { ...i, cantidad: i.cantidad + 1, subtotal: i.precioUnitario * (i.cantidad + 1) }
-            : i
+            ? {
+                ...i,
+                cantidad: i.cantidad + 1,
+                subtotal: i.precioUnitario * (i.cantidad + 1),
+              }
+            : i,
         );
       }
-      return [...prev, {
-        id: `${getProductoId(producto)}-${Date.now()}`,
-        producto,
-        toppings: [],
-        cantidad: 1,
-        precioUnitario: precio,
-        subtotal: precio,
-      }];
+      return [
+        ...prev,
+        {
+          id: `${getProductoId(producto)}-${Date.now()}`,
+          producto,
+          toppings: [],
+          cantidad: 1,
+          precioUnitario: precio,
+          subtotal: precio,
+        },
+      ];
     });
   }
 
@@ -191,14 +214,17 @@ export default function Pedido() {
 
   function agregarAlPedido() {
     if (!productoSeleccionado) return;
-    setPedido((prev) => [...prev, {
-      id: `${getProductoId(productoSeleccionado)}-${Date.now()}`,
-      producto: productoSeleccionado,
-      toppings: [...toppingsSeleccionados],
-      cantidad: 1,
-      precioUnitario: precioFinal,
-      subtotal: precioFinal,
-    }]);
+    setPedido((prev) => [
+      ...prev,
+      {
+        id: `${getProductoId(productoSeleccionado)}-${Date.now()}`,
+        producto: productoSeleccionado,
+        toppings: [...toppingsSeleccionados],
+        cantidad: 1,
+        precioUnitario: precioFinal,
+        subtotal: precioFinal,
+      },
+    ]);
     setProductoSeleccionado(null);
     setToppingsSeleccionados([]);
   }
@@ -211,14 +237,16 @@ export default function Pedido() {
   function cambiarCantidad(id, val) {
     const n = Math.max(1, Number(val));
     setPedido((prev) =>
-      prev.map((i) => i.id === id ? { ...i, cantidad: n, subtotal: i.precioUnitario * n } : i)
+      prev.map((i) =>
+        i.id === id ? { ...i, cantidad: n, subtotal: i.precioUnitario * n } : i,
+      ),
     );
   }
 
   // ── Cálculos ───────────────────────────────────────────────
-  const subtotal              = totalPedido(pedido);
-  const total                 = subtotal;
-  const cambio                = calcularCambio(pago, total);
+  const subtotal = totalPedido(pedido);
+  const total = subtotal;
+  const cambio = calcularCambio(pago, total);
 
   // Si el método es transferencia, sincronizar pago con total automáticamente
   useEffect(() => {
@@ -231,14 +259,29 @@ export default function Pedido() {
   useEffect(() => {
     function onKeyDown(e) {
       const tag = document.activeElement?.tagName;
-      const escribiendo = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+      const escribiendo =
+        tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 
       // Esc: cerrar modales, salir de personalización, o vaciar pedido
       if (e.key === "Escape") {
-        if (modalExito) { setModalExito(null); setVentaParaTicket(null); return; }
-        if (modalVaciar) { setModalVaciar(false); return; }
-        if (productoSeleccionado) { setProductoSeleccionado(null); setToppingsSeleccionados([]); return; }
-        if (pedido.length > 0) { setModalVaciar(true); return; }
+        if (modalExito) {
+          setModalExito(null);
+          setVentaParaTicket(null);
+          return;
+        }
+        if (modalVaciar) {
+          setModalVaciar(false);
+          return;
+        }
+        if (productoSeleccionado) {
+          setProductoSeleccionado(null);
+          setToppingsSeleccionados([]);
+          return;
+        }
+        if (pedido.length > 0) {
+          setModalVaciar(true);
+          return;
+        }
         return;
       }
 
@@ -247,7 +290,10 @@ export default function Pedido() {
 
       // Enter: cobrar si es posible
       if (e.key === "Enter" && !escribiendo) {
-        if (puedeCobrar({ items: pedido, metodoPago, pago, total }) && !cobrandoLoad) {
+        if (
+          puedeCobrar({ items: pedido, metodoPago, pago, total }) &&
+          !cobrandoLoad
+        ) {
           e.preventDefault();
           cobrar();
         }
@@ -266,7 +312,12 @@ export default function Pedido() {
       }
 
       // Tecla "0": pago exacto
-      if (!escribiendo && metodoPago === "Efectivo" && e.key === "0" && total > 0) {
+      if (
+        !escribiendo &&
+        metodoPago === "Efectivo" &&
+        e.key === "0" &&
+        total > 0
+      ) {
         e.preventDefault();
         setPago(total);
       }
@@ -276,7 +327,16 @@ export default function Pedido() {
     return () => window.removeEventListener("keydown", onKeyDown);
     // cobrar() se invoca con estos mismos valores ya listados como deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modalExito, modalVaciar, productoSeleccionado, pedido, metodoPago, pago, total, cobrandoLoad]);
+  }, [
+    modalExito,
+    modalVaciar,
+    productoSeleccionado,
+    pedido,
+    metodoPago,
+    pago,
+    total,
+    cobrandoLoad,
+  ]);
 
   // ── Cobrar ─────────────────────────────────────────────────
   async function cobrar() {
@@ -299,7 +359,9 @@ export default function Pedido() {
       });
 
       // El servidor recalcula el total; usarlo como fuente de verdad.
-      const totalReal = Number.isFinite(Number(data.total)) ? Number(data.total) : total;
+      const totalReal = Number.isFinite(Number(data.total))
+        ? Number(data.total)
+        : total;
       const cambioReal = calcularCambio(pago, totalReal);
 
       // Congelar datos para el ticket (antes de vaciar el pedido)
@@ -317,7 +379,7 @@ export default function Pedido() {
         })),
         total: totalReal,
         // Desglose fiscal calculado por la BD (IVA por producto).
-        total_iva:  Number(data.total_iva)  || 0,
+        total_iva: Number(data.total_iva) || 0,
         total_base: Number(data.total_base) || 0,
         metodoPago,
         pago,
@@ -364,14 +426,29 @@ export default function Pedido() {
   return (
     <>
       {/* NAVBAR */}
-      <nav className={`navbar navbar-expand-lg border-bottom ${navbarFixed ? "fixed-nav" : ""}`}>
+      <nav
+        className={`navbar navbar-expand-lg border-bottom ${navbarFixed ? "fixed-nav" : ""}`}
+      >
         <div className="container-fluid px-4">
-          <Link className="navbar-brand fw-bold" to="/">🍨 NixGelato</Link>
+          <Link className="navbar-brand fw-bold" to="/">
+            🍨 NixGelato
+          </Link>
           <div className="d-flex gap-2 align-items-center ms-auto">
-            <span className="badge bg-success d-none d-sm-inline">{pedido.length} items</span>
-            <span className="badge bg-brand d-none d-sm-inline">{money(total)}</span>
-            <Link className="btn btn-sm btn-outline-brand" to="/facturas">Ventas</Link>
-            <button className="btn btn-sm btn-outline-secondary" onClick={logout}>Salir</button>
+            <span className="badge bg-success d-none d-sm-inline">
+              {pedido.length} items
+            </span>
+            <span className="badge bg-brand d-none d-sm-inline">
+              {money(total)}
+            </span>
+            <Link className="btn btn-sm btn-outline-brand" to="/facturas">
+              Ventas
+            </Link>
+            <button
+              className="btn btn-sm btn-outline-secondary"
+              onClick={logout}
+            >
+              Salir
+            </button>
           </div>
         </div>
       </nav>
@@ -379,12 +456,10 @@ export default function Pedido() {
 
       <main className="container-fluid py-3 px-4">
         <div className="row g-4">
-
           {/* ── PANEL IZQUIERDO: Productos ── */}
           <div className="col-xl-8 col-lg-7">
             <div className="card card-soft shadow-sm">
               <div className="card-body p-4">
-
                 {!productoSeleccionado && (
                   <MenuProductos
                     busqueda={busqueda}
@@ -403,7 +478,10 @@ export default function Pedido() {
                     seleccionados={toppingsSeleccionados}
                     precioFinal={precioFinal}
                     onToggle={toggleTopping}
-                    onVolver={() => { setProductoSeleccionado(null); setToppingsSeleccionados([]); }}
+                    onVolver={() => {
+                      setProductoSeleccionado(null);
+                      setToppingsSeleccionados([]);
+                    }}
                     onAgregar={agregarAlPedido}
                   />
                 )}
@@ -418,7 +496,10 @@ export default function Pedido() {
                 <div className="d-flex justify-content-between align-items-center">
                   <h4 className="fw-bold mb-0">🛒 Pedido</h4>
                   {pedido.length > 0 && (
-                    <button className="btn btn-sm btn-outline-danger" onClick={() => setModalVaciar(true)}>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => setModalVaciar(true)}
+                    >
                       Vaciar
                     </button>
                   )}
@@ -427,40 +508,85 @@ export default function Pedido() {
 
               <div className="card-body p-0">
                 {/* Items */}
-                <div className="px-4 py-2 border-bottom" style={{ maxHeight: 300, overflowY: "auto" }}>
+                <div
+                  className="px-4 py-2 border-bottom"
+                  style={{ maxHeight: 300, overflowY: "auto" }}
+                >
                   {pedido.length === 0 ? (
                     <div className="text-center py-4 text-muted">
                       <div style={{ fontSize: "2rem" }}>📝</div>
-                      <p className="small mt-2 mb-0">Agrega productos desde el menú</p>
+                      <p className="small mt-2 mb-0">
+                        Agrega productos desde el menú
+                      </p>
                     </div>
                   ) : (
                     pedido.map((item) => (
-                      <div key={item.id} className="d-flex align-items-start gap-2 py-2 border-bottom">
+                      <div
+                        key={item.id}
+                        className="d-flex align-items-start gap-2 py-2 border-bottom"
+                      >
                         <img
                           src={item.producto.img || ""}
                           alt=""
-                          style={{ width: 44, height: 44, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
-                          onError={(e) => { e.target.style.display = "none" }}
+                          style={{
+                            width: 44,
+                            height: 44,
+                            objectFit: "cover",
+                            borderRadius: 8,
+                            flexShrink: 0,
+                          }}
+                          onError={(e) => {
+                            e.target.style.display = "none";
+                          }}
                         />
                         <div className="flex-grow-1 min-w-0">
-                          <div className="fw-semibold small text-truncate">{getProductoNombre(item.producto)}</div>
+                          <div className="fw-semibold small text-truncate">
+                            {getProductoNombre(item.producto)}
+                          </div>
                           {item.toppings.length > 0 && (
                             <div className="small text-success text-truncate">
                               + {item.toppings.map(getToppingNombre).join(", ")}
                             </div>
                           )}
                           <div className="d-flex align-items-center gap-2 mt-1">
-                            <div className="input-group input-group-sm" style={{ width: 80 }}>
-                              <button className="btn btn-outline-secondary btn-sm px-2"
-                                onClick={() => cambiarCantidad(item.id, item.cantidad - 1)}>−</button>
-                              <span className="input-group-text px-2 text-center" style={{ minWidth: 28 }}>{item.cantidad}</span>
-                              <button className="btn btn-outline-secondary btn-sm px-2"
-                                onClick={() => cambiarCantidad(item.id, item.cantidad + 1)}>+</button>
+                            <div
+                              className="input-group input-group-sm"
+                              style={{ width: 80 }}
+                            >
+                              <button
+                                className="btn btn-outline-secondary btn-sm px-2"
+                                onClick={() =>
+                                  cambiarCantidad(item.id, item.cantidad - 1)
+                                }
+                              >
+                                −
+                              </button>
+                              <span
+                                className="input-group-text px-2 text-center"
+                                style={{ minWidth: 28 }}
+                              >
+                                {item.cantidad}
+                              </span>
+                              <button
+                                className="btn btn-outline-secondary btn-sm px-2"
+                                onClick={() =>
+                                  cambiarCantidad(item.id, item.cantidad + 1)
+                                }
+                              >
+                                +
+                              </button>
                             </div>
-                            <span className="fw-bold small text-dark ms-auto">{money(item.subtotal)}</span>
+                            <span className="fw-bold small text-dark ms-auto">
+                              {money(item.subtotal)}
+                            </span>
                           </div>
                         </div>
-                        <button className="btn btn-sm btn-outline-danger px-2" onClick={() => quitarProducto(item.id)}>×</button>
+                        <button
+                          className="btn btn-sm btn-outline-danger px-2"
+                          onClick={() => quitarProducto(item.id)}
+                        >
+                          ×
+                        </button>
                       </div>
                     ))
                   )}
@@ -470,21 +596,29 @@ export default function Pedido() {
                 <div className="px-4 py-3 border-bottom">
                   <div className="d-flex justify-content-between align-items-center">
                     <span className="fw-bold">Total</span>
-                    <span className="fw-bold text-success fs-4">{money(total)}</span>
+                    <span className="fw-bold text-success fs-4">
+                      {money(total)}
+                    </span>
                   </div>
                 </div>
 
                 {/* Pago */}
                 <PanelPago
-                  cliente={cliente} setCliente={setCliente}
-                  metodosPago={metodosPago} metodoPago={metodoPago}
+                  cliente={cliente}
+                  setCliente={setCliente}
+                  metodosPago={metodosPago}
+                  metodoPago={metodoPago}
                   onSelectMetodo={(m) => {
                     setMetodoPago(m.nombre_metodo);
                     setPago(m.nombre_metodo !== "Efectivo" ? total : 0);
                   }}
-                  pago={pago} setPago={setPago}
-                  total={total} cambio={cambio}
-                  items={pedido} cobrandoLoad={cobrandoLoad} onCobrar={cobrar}
+                  pago={pago}
+                  setPago={setPago}
+                  total={total}
+                  cambio={cambio}
+                  items={pedido}
+                  cobrandoLoad={cobrandoLoad}
+                  onCobrar={cobrar}
                 />
               </div>
             </div>
@@ -494,13 +628,20 @@ export default function Pedido() {
 
       {/* Modal vaciar pedido */}
       <ModalConfirmar
-        config={modalVaciar ? {
-          titulo: "¿Vaciar el pedido?",
-          mensaje: "Se eliminarán todos los productos del pedido actual.",
-          tipo: "danger",
-          txtOk: "Vaciar",
-        } : null}
-        onConfirm={() => { setPedido([]); setModalVaciar(false); }}
+        config={
+          modalVaciar
+            ? {
+                titulo: "¿Vaciar el pedido?",
+                mensaje: "Se eliminarán todos los productos del pedido actual.",
+                tipo: "danger",
+                txtOk: "Vaciar",
+              }
+            : null
+        }
+        onConfirm={() => {
+          setPedido([]);
+          setModalVaciar(false);
+        }}
         onCancel={() => setModalVaciar(false)}
       />
 
@@ -508,7 +649,10 @@ export default function Pedido() {
       <ModalVentaExito
         venta={modalExito}
         onImprimir={() => window.print()}
-        onNuevaVenta={() => { setModalExito(null); setVentaParaTicket(null); }}
+        onNuevaVenta={() => {
+          setModalExito(null);
+          setVentaParaTicket(null);
+        }}
       />
 
       {/* Ticket de impresión (oculto en pantalla, visible solo al imprimir) */}

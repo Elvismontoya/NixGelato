@@ -7,7 +7,6 @@ import { money } from "../domain/money.js";
 import useSession from "../hooks/useSession.js";
 import useAsync from "../hooks/useAsync.js";
 
-
 const toYMD = (d) => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -30,47 +29,70 @@ const ACCION_COLOR = {
 export default function AdminAuditoria() {
   const { logout } = useSession();
 
-  const hoy        = useMemo(() => new Date(), []);
-  const sieteAtras = useMemo(() => { const d = new Date(); d.setDate(d.getDate() - 7); return d; }, []);
+  const hoy = useMemo(() => new Date(), []);
+  const sieteAtras = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d;
+  }, []);
 
   const [fechaDesde, setFechaDesde] = useState(toYMD(sieteAtras));
   const [fechaHasta, setFechaHasta] = useState(toYMD(hoy));
 
   // Tres consultas independientes (cada una con su propio estado de carga).
   const ingresosDiaQ = useAsync(
-    () => getIngresosPorDia({ fecha_desde: fechaDesde, fecha_hasta: fechaHasta }),
+    () =>
+      getIngresosPorDia({ fecha_desde: fechaDesde, fecha_hasta: fechaHasta }),
     { immediate: false },
   );
-  const auditoriaQ = useAsync(() => getAuditoria({ limit: 500 }), { immediate: false });
+  const auditoriaQ = useAsync(() => getAuditoria({ limit: 500 }), {
+    immediate: false,
+  });
   const ingresosHoyQ = useAsync(getIngresosHoy, { immediate: false });
 
-  const ingresosDia = useMemo(() => Array.isArray(ingresosDiaQ.data) ? ingresosDiaQ.data : [], [ingresosDiaQ.data]);
-  const auditoria    = useMemo(() => Array.isArray(auditoriaQ.data) ? auditoriaQ.data : [], [auditoriaQ.data]);
-  const ingresosHoy  = ingresosHoyQ.data;
-  const loadingIngr  = ingresosDiaQ.loading;
-  const loadingAud   = auditoriaQ.loading;
+  const ingresosDia = useMemo(
+    () => (Array.isArray(ingresosDiaQ.data) ? ingresosDiaQ.data : []),
+    [ingresosDiaQ.data],
+  );
+  const auditoria = useMemo(
+    () => (Array.isArray(auditoriaQ.data) ? auditoriaQ.data : []),
+    [auditoriaQ.data],
+  );
+  const ingresosHoy = ingresosHoyQ.data;
+  const loadingIngr = ingresosDiaQ.loading;
+  const loadingAud = auditoriaQ.loading;
 
   const cargarIngresosPorDia = ingresosDiaQ.run;
-  const cargarAuditoria      = auditoriaQ.run;
-  const cargarIngresosHoy    = ingresosHoyQ.run;
+  const cargarAuditoria = auditoriaQ.run;
+  const cargarIngresosHoy = ingresosHoyQ.run;
 
   const [primeraCarga, setPrimeraCarga] = useState(true);
   const cargando = primeraCarga;
 
   // Filtros auditoría
-  const [busqueda,     setBusqueda]     = useState("");
+  const [busqueda, setBusqueda] = useState("");
   const [filtroAccion, setFiltroAccion] = useState("");
-  const [filtroTabla,  setFiltroTabla]  = useState("");
+  const [filtroTabla, setFiltroTabla] = useState("");
 
   // Paginación auditoría
   const POR_PAGINA = 15;
   const [pagina, setPagina] = useState(1);
 
-    // ── Totales ingresos ──────────────────────────────────────
+  // ── Totales ingresos ──────────────────────────────────────
   const { totalIngresos, totalVentas, promedioVenta } = useMemo(() => {
-    const tIng = ingresosDia.reduce((s, it) => s + (Number(it.ingresos_totales) || 0), 0);
-    const tVen = ingresosDia.reduce((s, it) => s + (Number(it.total_ventas)    || 0), 0);
-    return { totalIngresos: tIng, totalVentas: tVen, promedioVenta: tVen > 0 ? tIng / tVen : 0 };
+    const tIng = ingresosDia.reduce(
+      (s, it) => s + (Number(it.ingresos_totales) || 0),
+      0,
+    );
+    const tVen = ingresosDia.reduce(
+      (s, it) => s + (Number(it.total_ventas) || 0),
+      0,
+    );
+    return {
+      totalIngresos: tIng,
+      totalVentas: tVen,
+      promedioVenta: tVen > 0 ? tIng / tVen : 0,
+    };
   }, [ingresosDia]);
 
   // ── Filtrado auditoría ────────────────────────────────────
@@ -78,29 +100,53 @@ export default function AdminAuditoria() {
     const q = busqueda.toLowerCase();
     return auditoria.filter((it) => {
       if (filtroAccion && it.accion !== filtroAccion) return false;
-      if (filtroTabla  && it.tabla_afectada !== filtroTabla) return false;
-      if (q && !(
-        (it.descripcion || "").toLowerCase().includes(q) ||
-        (it.empleado    || "").toLowerCase().includes(q) ||
-        (it.producto    || "").toLowerCase().includes(q)
-      )) return false;
+      if (filtroTabla && it.tabla_afectada !== filtroTabla) return false;
+      if (
+        q &&
+        !(
+          (it.descripcion || "").toLowerCase().includes(q) ||
+          (it.empleado || "").toLowerCase().includes(q) ||
+          (it.producto || "").toLowerCase().includes(q)
+        )
+      )
+        return false;
       return true;
     });
   }, [auditoria, busqueda, filtroAccion, filtroTabla]);
 
-  const totalPaginas   = Math.max(1, Math.ceil(auditoriaFiltrada.length / POR_PAGINA));
-  const auditoriaPage  = auditoriaFiltrada.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
+  const totalPaginas = Math.max(
+    1,
+    Math.ceil(auditoriaFiltrada.length / POR_PAGINA),
+  );
+  const auditoriaPage = auditoriaFiltrada.slice(
+    (pagina - 1) * POR_PAGINA,
+    pagina * POR_PAGINA,
+  );
 
   // Opciones únicas para filtros
-  const accionesUnicas = useMemo(() => [...new Set(auditoria.map(a => a.accion).filter(Boolean))].sort(), [auditoria]);
-  const tablasUnicas   = useMemo(() => [...new Set(auditoria.map(a => a.tabla_afectada).filter(Boolean))].sort(), [auditoria]);
+  const accionesUnicas = useMemo(
+    () => [...new Set(auditoria.map((a) => a.accion).filter(Boolean))].sort(),
+    [auditoria],
+  );
+  const tablasUnicas = useMemo(
+    () =>
+      [
+        ...new Set(auditoria.map((a) => a.tabla_afectada).filter(Boolean)),
+      ].sort(),
+    [auditoria],
+  );
 
   // Reset página al filtrar
-  useEffect(() => { setPagina(1); }, [busqueda, filtroAccion, filtroTabla]);
+  useEffect(() => {
+    setPagina(1);
+  }, [busqueda, filtroAccion, filtroTabla]);
 
   useEffect(() => {
-    Promise.allSettled([cargarIngresosPorDia(), cargarAuditoria(), cargarIngresosHoy()])
-      .finally(() => setPrimeraCarga(false));
+    Promise.allSettled([
+      cargarIngresosPorDia(),
+      cargarAuditoria(),
+      cargarIngresosHoy(),
+    ]).finally(() => setPrimeraCarga(false));
     // Carga inicial única; el filtro por fechas se aplica con el botón "Aplicar".
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -128,16 +174,34 @@ export default function AdminAuditoria() {
         {/* Hero */}
         <section className="hero mb-4 text-center fade-in">
           <h1 className="display-6 fw-bold mb-2">Auditoría e Ingresos</h1>
-          <p className="lead mb-0">Registro de todas las acciones realizadas en el sistema.</p>
+          <p className="lead mb-0">
+            Registro de todas las acciones realizadas en el sistema.
+          </p>
         </section>
 
         {/* Stats */}
         <div className="row g-3 mb-4">
           {[
-            { label: "Ingresos hoy",      value: money(ingresosHoy?.ingresos_totales ?? 0), sub: `${ingresosHoy?.total_ventas ?? 0} ventas hoy` },
-            { label: "Total ingresos",    value: money(totalIngresos),   sub: "Período seleccionado" },
-            { label: "Ventas totales",    value: totalVentas,            sub: "Facturas registradas" },
-            { label: "Promedio x venta",  value: money(promedioVenta),   sub: "Valor promedio" },
+            {
+              label: "Ingresos hoy",
+              value: money(ingresosHoy?.ingresos_totales ?? 0),
+              sub: `${ingresosHoy?.total_ventas ?? 0} ventas hoy`,
+            },
+            {
+              label: "Total ingresos",
+              value: money(totalIngresos),
+              sub: "Período seleccionado",
+            },
+            {
+              label: "Ventas totales",
+              value: totalVentas,
+              sub: "Facturas registradas",
+            },
+            {
+              label: "Promedio x venta",
+              value: money(promedioVenta),
+              sub: "Valor promedio",
+            },
           ].map((s) => (
             <div className="col-6 col-md-3" key={s.label}>
               <div className="card card-soft h-100 text-center p-3">
@@ -156,17 +220,38 @@ export default function AdminAuditoria() {
             <div className="row g-3">
               <div className="col-md-4">
                 <label className="form-label">Desde</label>
-                <input type="date" className="form-control" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} />
+                <input
+                  type="date"
+                  className="form-control"
+                  value={fechaDesde}
+                  onChange={(e) => setFechaDesde(e.target.value)}
+                />
               </div>
               <div className="col-md-4">
                 <label className="form-label">Hasta</label>
-                <input type="date" className="form-control" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} />
+                <input
+                  type="date"
+                  className="form-control"
+                  value={fechaHasta}
+                  onChange={(e) => setFechaHasta(e.target.value)}
+                />
               </div>
               <div className="col-md-4 d-flex align-items-end gap-2">
-                <button className="btn btn-brand flex-grow-1" onClick={cargarIngresosPorDia}>
+                <button
+                  className="btn btn-brand flex-grow-1"
+                  onClick={cargarIngresosPorDia}
+                >
                   Aplicar
                 </button>
-                <button className="btn btn-outline-secondary" onClick={() => { cargarAuditoria(); cargarIngresosHoy(); cargarIngresosPorDia(); }} title="Actualizar">
+                <button
+                  className="btn btn-outline-secondary"
+                  onClick={() => {
+                    cargarAuditoria();
+                    cargarIngresosHoy();
+                    cargarIngresosPorDia();
+                  }}
+                  title="Actualizar"
+                >
                   🔄
                 </button>
               </div>
@@ -183,7 +268,14 @@ export default function AdminAuditoria() {
             </div>
             <div className="table-responsive" style={{ maxHeight: 380 }}>
               <table className="table align-middle table-hover">
-                <thead style={{ position: "sticky", top: 0, background: "var(--white, #fff)", zIndex: 1 }}>
+                <thead
+                  style={{
+                    position: "sticky",
+                    top: 0,
+                    background: "var(--white, #fff)",
+                    zIndex: 1,
+                  }}
+                >
                   <tr>
                     <th>Fecha</th>
                     <th className="text-center">Ventas</th>
@@ -193,20 +285,45 @@ export default function AdminAuditoria() {
                 </thead>
                 <tbody>
                   {loadingIngr ? (
-                    <tr><td colSpan={4}><div className="placeholder-wave"><span className="placeholder col-12" /></div></td></tr>
+                    <tr>
+                      <td colSpan={4}>
+                        <div className="placeholder-wave">
+                          <span className="placeholder col-12" />
+                        </div>
+                      </td>
+                    </tr>
                   ) : ingresosDia.length === 0 ? (
-                    <tr><td colSpan={4} className="text-center text-muted py-4">Sin datos en el período seleccionado</td></tr>
+                    <tr>
+                      <td colSpan={4} className="text-center text-muted py-4">
+                        Sin datos en el período seleccionado
+                      </td>
+                    </tr>
                   ) : (
                     ingresosDia.map((it, i) => {
                       const fecha = parseYMD(it.fecha);
                       return (
                         <tr key={i}>
                           <td className="fw-semibold">
-                            {fecha ? fecha.toLocaleDateString("es-CO", { weekday: "short", year: "numeric", month: "short", day: "numeric" }) : it.fecha}
+                            {fecha
+                              ? fecha.toLocaleDateString("es-CO", {
+                                  weekday: "short",
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                })
+                              : it.fecha}
                           </td>
-                          <td className="text-center"><span className="badge bg-info">{it.total_ventas}</span></td>
-                          <td className="text-end fw-bold text-gradient">{money(it.ingresos_totales)}</td>
-                          <td className="text-end text-muted">{money(it.promedio_venta)}</td>
+                          <td className="text-center">
+                            <span className="badge bg-info">
+                              {it.total_ventas}
+                            </span>
+                          </td>
+                          <td className="text-end fw-bold text-gradient">
+                            {money(it.ingresos_totales)}
+                          </td>
+                          <td className="text-end text-muted">
+                            {money(it.promedio_venta)}
+                          </td>
                         </tr>
                       );
                     })
@@ -222,7 +339,9 @@ export default function AdminAuditoria() {
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h5 className="mb-0">📋 Historial de auditoría</h5>
-              <span className="badge bg-info">{auditoriaFiltrada.length} registros</span>
+              <span className="badge bg-info">
+                {auditoriaFiltrada.length} registros
+              </span>
             </div>
 
             {/* Filtros auditoría */}
@@ -236,25 +355,58 @@ export default function AdminAuditoria() {
                 />
               </div>
               <div className="col-md-3">
-                <select className="form-select" value={filtroAccion} onChange={(e) => setFiltroAccion(e.target.value)}>
+                <select
+                  className="form-select"
+                  value={filtroAccion}
+                  onChange={(e) => setFiltroAccion(e.target.value)}
+                >
                   <option value="">Todas las acciones</option>
-                  {accionesUnicas.map((a) => <option key={a} value={a}>{a}</option>)}
+                  {accionesUnicas.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="col-md-3">
-                <select className="form-select" value={filtroTabla} onChange={(e) => setFiltroTabla(e.target.value)}>
+                <select
+                  className="form-select"
+                  value={filtroTabla}
+                  onChange={(e) => setFiltroTabla(e.target.value)}
+                >
                   <option value="">Todas las tablas</option>
-                  {tablasUnicas.map((t) => <option key={t} value={t}>{t}</option>)}
+                  {tablasUnicas.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="col-md-1 d-flex">
-                <button className="btn btn-outline-secondary w-100" onClick={() => { setBusqueda(""); setFiltroAccion(""); setFiltroTabla(""); }} title="Limpiar filtros">✕</button>
+                <button
+                  className="btn btn-outline-secondary w-100"
+                  onClick={() => {
+                    setBusqueda("");
+                    setFiltroAccion("");
+                    setFiltroTabla("");
+                  }}
+                  title="Limpiar filtros"
+                >
+                  ✕
+                </button>
               </div>
             </div>
 
             <div className="table-responsive" style={{ maxHeight: 520 }}>
               <table className="table align-middle table-hover">
-                <thead style={{ position: "sticky", top: 0, background: "var(--white, #fff)", zIndex: 1 }}>
+                <thead
+                  style={{
+                    position: "sticky",
+                    top: 0,
+                    background: "var(--white, #fff)",
+                    zIndex: 1,
+                  }}
+                >
                   <tr>
                     <th style={{ minWidth: 150 }}>Fecha/Hora</th>
                     <th>Empleado</th>
@@ -266,17 +418,33 @@ export default function AdminAuditoria() {
                 <tbody>
                   {loadingAud ? (
                     Array.from({ length: 6 }).map((_, i) => (
-                      <tr key={i}><td colSpan={5}><div className="placeholder-wave"><span className="placeholder col-12" /></div></td></tr>
+                      <tr key={i}>
+                        <td colSpan={5}>
+                          <div className="placeholder-wave">
+                            <span className="placeholder col-12" />
+                          </div>
+                        </td>
+                      </tr>
                     ))
                   ) : auditoriaPage.length === 0 ? (
-                    <tr><td colSpan={5} className="text-center text-muted py-5">No hay registros con ese filtro</td></tr>
+                    <tr>
+                      <td colSpan={5} className="text-center text-muted py-5">
+                        No hay registros con ese filtro
+                      </td>
+                    </tr>
                   ) : (
                     auditoriaPage.map((it) => (
                       <tr key={it.id_auditoria}>
-                        <td className="small text-muted" style={{ whiteSpace: "nowrap" }}>
+                        <td
+                          className="small text-muted"
+                          style={{ whiteSpace: "nowrap" }}
+                        >
                           {new Date(it.fecha_hora).toLocaleString("es-CO", {
-                            year: "numeric", month: "2-digit", day: "2-digit",
-                            hour: "2-digit", minute: "2-digit",
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </td>
                         <td>
@@ -285,20 +453,28 @@ export default function AdminAuditoria() {
                           </span>
                         </td>
                         <td className="text-center">
-                          <span className={`badge ${ACCION_COLOR[it.accion] || "bg-secondary"}`}>
+                          <span
+                            className={`badge ${ACCION_COLOR[it.accion] || "bg-secondary"}`}
+                          >
                             {it.accion}
                           </span>
                         </td>
                         <td>
-                          {it.tabla_afectada
-                            ? <code className="small">{it.tabla_afectada}</code>
-                            : <span className="text-muted">—</span>}
+                          {it.tabla_afectada ? (
+                            <code className="small">{it.tabla_afectada}</code>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
                           {it.producto && (
-                            <div className="small text-muted mt-1">📦 {it.producto}</div>
+                            <div className="small text-muted mt-1">
+                              📦 {it.producto}
+                            </div>
                           )}
                         </td>
                         <td className="small">
-                          {it.descripcion?.trim() || <span className="text-muted">—</span>}
+                          {it.descripcion?.trim() || (
+                            <span className="text-muted">—</span>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -311,30 +487,63 @@ export default function AdminAuditoria() {
             {totalPaginas > 1 && (
               <div className="d-flex justify-content-between align-items-center mt-3">
                 <small className="text-muted">
-                  Página {pagina} de {totalPaginas} · {auditoriaFiltrada.length} registros
+                  Página {pagina} de {totalPaginas} · {auditoriaFiltrada.length}{" "}
+                  registros
                 </small>
                 <div className="d-flex gap-1">
-                  <button className="btn btn-sm btn-outline-secondary" onClick={() => setPagina(1)} disabled={pagina === 1}>«</button>
-                  <button className="btn btn-sm btn-outline-secondary" onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={pagina === 1}>‹</button>
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setPagina(1)}
+                    disabled={pagina === 1}
+                  >
+                    «
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                    disabled={pagina === 1}
+                  >
+                    ‹
+                  </button>
                   {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
-                    const start = Math.max(1, Math.min(pagina - 2, totalPaginas - 4));
+                    const start = Math.max(
+                      1,
+                      Math.min(pagina - 2, totalPaginas - 4),
+                    );
                     const p = start + i;
                     return p <= totalPaginas ? (
                       <button
                         key={p}
-                        className={`btn btn-sm ${p === pagina ? 'btn-brand' : 'btn-outline-secondary'}`}
+                        className={`btn btn-sm ${p === pagina ? "btn-brand" : "btn-outline-secondary"}`}
                         onClick={() => setPagina(p)}
-                      >{p}</button>
+                      >
+                        {p}
+                      </button>
                     ) : null;
                   })}
-                  <button className="btn btn-sm btn-outline-secondary" onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))} disabled={pagina === totalPaginas}>›</button>
-                  <button className="btn btn-sm btn-outline-secondary" onClick={() => setPagina(totalPaginas)} disabled={pagina === totalPaginas}>»</button>
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() =>
+                      setPagina((p) => Math.min(totalPaginas, p + 1))
+                    }
+                    disabled={pagina === totalPaginas}
+                  >
+                    ›
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setPagina(totalPaginas)}
+                    disabled={pagina === totalPaginas}
+                  >
+                    »
+                  </button>
                 </div>
               </div>
             )}
 
             <p className="small text-muted mt-2 mb-0">
-              Mostrando {auditoriaPage.length} de {auditoriaFiltrada.length} registros
+              Mostrando {auditoriaPage.length} de {auditoriaFiltrada.length}{" "}
+              registros
             </p>
           </div>
         </div>

@@ -1,9 +1,17 @@
 // Pestaña de gestión de categorías. Presentacional: el estado del formulario
 // y los handlers viven en el contenedor (Admin).
 export default function CategoriasTab({
-  form, onChange, onSubmit, onReset, editMode, msg,
-  categorias, productos, loading,
-  onStartEditar, onPedirEliminar,
+  form,
+  onChange,
+  onSubmit,
+  onReset,
+  editMode,
+  msg,
+  categorias,
+  productos,
+  loading,
+  onStartEditar,
+  onPedirEliminar,
 }) {
   const contarProductos = (idCat) =>
     productos.filter((p) => String(p.id_categoria) === String(idCat)).length;
@@ -14,7 +22,9 @@ export default function CategoriasTab({
       <div className="col-lg-4">
         <div className="card card-soft h-100">
           <div className="card-body">
-            <h5 className="mb-3">{editMode ? "Editar categoría" : "Nueva categoría"}</h5>
+            <h5 className="mb-3">
+              {editMode ? "Editar categoría" : "Nueva categoría"}
+            </h5>
 
             <form onSubmit={onSubmit} className="stagger-children">
               <input type="hidden" name="id" value={form.id} />
@@ -22,17 +32,24 @@ export default function CategoriasTab({
               <div className="mb-3">
                 <label className="form-label">Nombre de la categoría</label>
                 <input
-                  type="text" className="form-control" name="nombre"
-                  value={form.nombre} onChange={onChange}
-                  placeholder="Ej: Helados, Postres, Bebidas..." required
+                  type="text"
+                  className="form-control"
+                  name="nombre"
+                  value={form.nombre}
+                  onChange={onChange}
+                  placeholder="Ej: Helados, Postres, Bebidas..."
+                  required
                 />
               </div>
 
               <div className="mb-3">
                 <label className="form-label">Descripción (opcional)</label>
                 <textarea
-                  className="form-control" name="descripcion" rows="3"
-                  value={form.descripcion} onChange={onChange}
+                  className="form-control"
+                  name="descripcion"
+                  rows="3"
+                  value={form.descripcion}
+                  onChange={onChange}
                   placeholder="Descripción de la categoría..."
                 />
               </div>
@@ -42,7 +59,11 @@ export default function CategoriasTab({
                   {editMode ? "Actualizar categoría" : "Crear categoría"}
                 </button>
                 {editMode && (
-                  <button type="button" className="btn btn-outline-secondary" onClick={onReset}>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={onReset}
+                  >
                     Cancelar edición
                   </button>
                 )}
@@ -62,7 +83,9 @@ export default function CategoriasTab({
           <div className="card-body">
             <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
               <h5 className="mb-0">Categorías existentes</h5>
-              <small className="text-muted">Organiza tus productos por categorías</small>
+              <small className="text-muted">
+                Organiza tus productos por categorías
+              </small>
             </div>
 
             <div className="table-responsive">
@@ -80,28 +103,48 @@ export default function CategoriasTab({
                     Array.from({ length: 4 }).map((_, i) => (
                       <tr key={`skc-${i}`}>
                         <td colSpan={4}>
-                          <div className="placeholder-wave"><span className="placeholder col-12" /></div>
+                          <div className="placeholder-wave">
+                            <span className="placeholder col-12" />
+                          </div>
                         </td>
                       </tr>
                     ))
                   ) : categorias.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="text-center text-muted py-4">No hay categorías creadas.</td>
+                      <td colSpan={4} className="text-center text-muted py-4">
+                        No hay categorías creadas.
+                      </td>
                     </tr>
                   ) : (
                     categorias.map((cat) => (
                       <tr key={cat.id_categoria}>
-                        <td><div className="fw-semibold">{cat.nombre}</div></td>
-                        <td><div className="text-muted small">{cat.descripcion || "Sin descripción"}</div></td>
+                        <td>
+                          <div className="fw-semibold">{cat.nombre}</div>
+                        </td>
+                        <td>
+                          <div className="text-muted small">
+                            {cat.descripcion || "Sin descripción"}
+                          </div>
+                        </td>
                         <td className="text-center">
-                          <span className="badge bg-info">{contarProductos(cat.id_categoria)}</span>
+                          <span className="badge bg-info">
+                            {contarProductos(cat.id_categoria)}
+                          </span>
                         </td>
                         <td className="text-end">
                           <div className="d-flex justify-content-end gap-2 flex-nowrap">
-                            <button type="button" className="btn btn-sm btn-outline-brand btn-table-action" onClick={() => onStartEditar(cat)}>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-brand btn-table-action"
+                              onClick={() => onStartEditar(cat)}
+                            >
                               Editar
                             </button>
-                            <button type="button" className="btn btn-sm btn-outline-danger btn-table-action" onClick={() => onPedirEliminar(cat)}>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger btn-table-action"
+                              onClick={() => onPedirEliminar(cat)}
+                            >
                               Eliminar
                             </button>
                           </div>
@@ -115,8 +158,8 @@ export default function CategoriasTab({
 
             <div className="alert alert-info mt-3">
               <small>
-                <strong>Nota:</strong> Al eliminar una categoría, los productos asociados
-                quedarán sin categoría pero no se eliminarán.
+                <strong>Nota:</strong> Al eliminar una categoría, los productos
+                asociados quedarán sin categoría pero no se eliminarán.
               </small>
             </div>
           </div>

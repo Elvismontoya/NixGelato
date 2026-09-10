@@ -1,3 +1,3 @@
-import { apiGet } from './client.js'
+import { apiGet } from "./client.js";
 
-export const getToppings = () => apiGet('/api/toppings')
+export const getToppings = () => apiGet("/api/toppings");

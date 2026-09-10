@@ -1,140 +1,172 @@
-import { useState, useMemo } from 'react'
-import AdminNavbar from '../components/AdminNavbar.jsx'
-import Footer from '../components/Footer.jsx'
-import ModalConfirmar from '../components/ModalConfirmar.jsx'
-import { useFormValidation } from '../hooks/useFormValidation.jsx'
-import FieldError from '../components/FieldError.jsx'
-import { getEmpleados, getRoles, crearEmpleado, actualizarEmpleado, cambiarPassword as apiCambiarPassword, desactivarEmpleado } from '../api/empleados.js'
+import { useState, useMemo } from "react";
+import AdminNavbar from "../components/AdminNavbar.jsx";
+import Footer from "../components/Footer.jsx";
+import ModalConfirmar from "../components/ModalConfirmar.jsx";
+import { useFormValidation } from "../hooks/useFormValidation.jsx";
+import FieldError from "../components/FieldError.jsx";
+import {
+  getEmpleados,
+  getRoles,
+  crearEmpleado,
+  actualizarEmpleado,
+  cambiarPassword as apiCambiarPassword,
+  desactivarEmpleado,
+} from "../api/empleados.js";
 import useSession from "../hooks/useSession.js";
 import useAsync from "../hooks/useAsync.js";
 
 const FORM_EMPTY = {
-  id: '', nombres: '', apellidos: '', documento: '',
-  telefono: '', usuario: '', password: '', rol: 'cajero',
-}
+  id: "",
+  nombres: "",
+  apellidos: "",
+  documento: "",
+  telefono: "",
+  usuario: "",
+  password: "",
+  rol: "cajero",
+};
 
 async function cargarEmpleadosYRoles() {
   const [emp, rolesData] = await Promise.all([
     getEmpleados({ limit: 100 }),
     getRoles().catch(() => []),
-  ])
+  ]);
   return {
     empleados: Array.isArray(emp?.data) ? emp.data : [],
     roles: Array.isArray(rolesData) ? rolesData : [],
-  }
+  };
 }
 
 export default function Empleados() {
   const { logout } = useSession();
 
-  const { data, loading: cargando, run: cargarEmpleados } = useAsync(cargarEmpleadosYRoles)
-  const empleados = useMemo(() => data?.empleados ?? [], [data])
-  const roles = useMemo(() => data?.roles ?? [], [data])
+  const {
+    data,
+    loading: cargando,
+    run: cargarEmpleados,
+  } = useAsync(cargarEmpleadosYRoles);
+  const empleados = useMemo(() => data?.empleados ?? [], [data]);
+  const roles = useMemo(() => data?.roles ?? [], [data]);
 
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState("");
 
-  const [form,    setForm]    = useState(FORM_EMPTY)
-  const [msg,     setMsg]     = useState({ text: '', type: 'muted' })
-  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState(FORM_EMPTY);
+  const [msg, setMsg] = useState({ text: "", type: "muted" });
+  const [loading, setLoading] = useState(false);
 
   // Modal cambiar contraseña
-  const [showPassModal, setShowPassModal]   = useState(false)
-  const [passEmpId,     setPassEmpId]       = useState(null)
-  const [passEmpNombre, setPassEmpNombre]   = useState('')
-  const [nuevaPass,     setNuevaPass]       = useState('')
-  const [passMsg,       setPassMsg]         = useState({ text: '', type: 'muted' })
-  const [passLoading,   setPassLoading]     = useState(false)
+  const [showPassModal, setShowPassModal] = useState(false);
+  const [passEmpId, setPassEmpId] = useState(null);
+  const [passEmpNombre, setPassEmpNombre] = useState("");
+  const [nuevaPass, setNuevaPass] = useState("");
+  const [passMsg, setPassMsg] = useState({ text: "", type: "muted" });
+  const [passLoading, setPassLoading] = useState(false);
 
-  const editMode = useMemo(() => !!form.id, [form.id])
+  const editMode = useMemo(() => !!form.id, [form.id]);
 
-  const [modalDesactivar, setModalDesactivar] = useState(null)
-  const [loadingDesactivar, setLoadingDesactivar] = useState(false)
+  const [modalDesactivar, setModalDesactivar] = useState(null);
+  const [loadingDesactivar, setLoadingDesactivar] = useState(false);
 
   const validacion = useFormValidation({
-    nombres:   { required: 'El nombre es obligatorio' },
-    apellidos: { required: 'El apellido es obligatorio' },
-    usuario:   { required: 'El usuario es obligatorio', minLength: 3 },
-    password:  {
+    nombres: { required: "El nombre es obligatorio" },
+    apellidos: { required: "El apellido es obligatorio" },
+    usuario: { required: "El usuario es obligatorio", minLength: 3 },
+    password: {
       validate: (v, vals) => {
-        if (vals._editMode) return true // en edición no es obligatoria
-        if (!v || !v.trim()) return 'La contraseña es obligatoria'
-        if (v.trim().length < 8) return 'Mínimo 8 caracteres'
-        if (!/[A-Za-z]/.test(v) || !/[0-9]/.test(v)) return 'Debe incluir letras y números'
-        return true
-      }
+        if (vals._editMode) return true; // en edición no es obligatoria
+        if (!v || !v.trim()) return "La contraseña es obligatoria";
+        if (v.trim().length < 8) return "Mínimo 8 caracteres";
+        if (!/[A-Za-z]/.test(v) || !/[0-9]/.test(v))
+          return "Debe incluir letras y números";
+        return true;
+      },
     },
-  })
+  });
 
   // ── Filtro ────────────────────────────────────────────────
   const empleadosFiltrados = useMemo(() => {
-    const q = search.toLowerCase()
-    return empleados.filter((e) =>
-      !q ||
-      e.nombres.toLowerCase().includes(q) ||
-      e.apellidos.toLowerCase().includes(q) ||
-      e.usuario_login.toLowerCase().includes(q)
-    )
-  }, [empleados, search])
+    const q = search.toLowerCase();
+    return empleados.filter(
+      (e) =>
+        !q ||
+        e.nombres.toLowerCase().includes(q) ||
+        e.apellidos.toLowerCase().includes(q) ||
+        e.usuario_login.toLowerCase().includes(q),
+    );
+  }, [empleados, search]);
 
   // ── Formulario ────────────────────────────────────────────
   function onChange(e) {
-    const { name, value } = e.target
-    setForm((f) => ({ ...f, [name]: value }))
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value }));
   }
 
   function resetForm() {
-    setForm(FORM_EMPTY)
-    setMsg({ text: '', type: 'muted' })
+    setForm(FORM_EMPTY);
+    setMsg({ text: "", type: "muted" });
   }
 
   function startEditar(emp) {
     setForm({
-      id:        emp.id_empleado,
-      nombres:   emp.nombres,
+      id: emp.id_empleado,
+      nombres: emp.nombres,
       apellidos: emp.apellidos,
-      documento: emp.documento || '',
-      telefono:  emp.telefono  || '',
-      usuario:   emp.usuario_login,
-      password:  '',
-      rol:       emp.rol || 'cajero',
-    })
-    setMsg({ text: '', type: 'muted' })
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+      documento: emp.documento || "",
+      telefono: emp.telefono || "",
+      usuario: emp.usuario_login,
+      password: "",
+      rol: emp.rol || "cajero",
+    });
+    setMsg({ text: "", type: "muted" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function onSubmit(e) {
-    e.preventDefault()
-    setMsg({ text: 'Guardando...', type: 'muted' })
-    setLoading(true)
+    e.preventDefault();
+    setMsg({ text: "Guardando...", type: "muted" });
+    setLoading(true);
 
     const body = {
-      nombres:   form.nombres.trim(),
+      nombres: form.nombres.trim(),
       apellidos: form.apellidos.trim(),
       documento: form.documento.trim(),
-      telefono:  form.telefono.trim(),
-      usuario:   form.usuario.trim(),
-      rol:       form.rol,
-    }
-    if (!editMode) body.password = form.password.trim()
+      telefono: form.telefono.trim(),
+      usuario: form.usuario.trim(),
+      rol: form.rol,
+    };
+    if (!editMode) body.password = form.password.trim();
 
     // Validación visual con hook
-    const valido = validacion.validar({ ...body, password: form.password, _editMode: editMode })
-    if (!valido) { setLoading(false); setMsg({ text: '', type: '' }); return }
+    const valido = validacion.validar({
+      ...body,
+      password: form.password,
+      _editMode: editMode,
+    });
+    if (!valido) {
+      setLoading(false);
+      setMsg({ text: "", type: "" });
+      return;
+    }
 
     try {
       if (editMode) {
-        await actualizarEmpleado(form.id, body)
+        await actualizarEmpleado(form.id, body);
       } else {
-        await crearEmpleado(body)
+        await crearEmpleado(body);
       }
-      setMsg({ text: editMode ? 'Empleado actualizado' : 'Empleado creado correctamente', type: 'success' })
-      resetForm()
-      await cargarEmpleados()
+      setMsg({
+        text: editMode
+          ? "Empleado actualizado"
+          : "Empleado creado correctamente",
+        type: "success",
+      });
+      resetForm();
+      await cargarEmpleados();
     } catch (err) {
-      console.error(err)
-      setMsg({ text: err.message || 'Error al guardar', type: 'danger' })
+      console.error(err);
+      setMsg({ text: err.message || "Error al guardar", type: "danger" });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -142,55 +174,64 @@ export default function Empleados() {
   function pedirDesactivar(emp) {
     setModalDesactivar({
       id: emp.id_empleado,
-      titulo: '¿Desactivar empleado?',
-      mensaje: 'No podrá iniciar sesión hasta que sea reactivado.',
+      titulo: "¿Desactivar empleado?",
+      mensaje: "No podrá iniciar sesión hasta que sea reactivado.",
       detalle: `${emp.nombres} ${emp.apellidos} (@${emp.usuario_login})`,
-      tipo: 'warning',
-      txtOk: 'Desactivar',
-    })
+      tipo: "warning",
+      txtOk: "Desactivar",
+    });
   }
 
   async function desactivar(id) {
-    setLoadingDesactivar(true)
+    setLoadingDesactivar(true);
     try {
-      await desactivarEmpleado(id)
-      setModalDesactivar(null)
-      await cargarEmpleados()
+      await desactivarEmpleado(id);
+      setModalDesactivar(null);
+      await cargarEmpleados();
     } catch (err) {
-      console.error(err)
-      setMsg({ text: err.message || 'Error al desactivar', type: 'danger' })
+      console.error(err);
+      setMsg({ text: err.message || "Error al desactivar", type: "danger" });
     } finally {
-      setLoadingDesactivar(false)
+      setLoadingDesactivar(false);
     }
   }
 
   // ── Cambiar contraseña ────────────────────────────────────
   function abrirModalPass(emp) {
-    setPassEmpId(emp.id_empleado)
-    setPassEmpNombre(`${emp.nombres} ${emp.apellidos}`)
-    setNuevaPass('')
-    setPassMsg({ text: '', type: 'muted' })
-    setShowPassModal(true)
+    setPassEmpId(emp.id_empleado);
+    setPassEmpNombre(`${emp.nombres} ${emp.apellidos}`);
+    setNuevaPass("");
+    setPassMsg({ text: "", type: "muted" });
+    setShowPassModal(true);
   }
 
   async function cambiarPassword(e) {
-    e.preventDefault()
-    const p = nuevaPass.trim()
+    e.preventDefault();
+    const p = nuevaPass.trim();
     if (p.length < 8 || !/[A-Za-z]/.test(p) || !/[0-9]/.test(p)) {
-      setPassMsg({ text: 'Mínimo 8 caracteres, con letras y números', type: 'danger' })
-      return
+      setPassMsg({
+        text: "Mínimo 8 caracteres, con letras y números",
+        type: "danger",
+      });
+      return;
     }
-    setPassLoading(true)
-    setPassMsg({ text: 'Guardando...', type: 'muted' })
+    setPassLoading(true);
+    setPassMsg({ text: "Guardando...", type: "muted" });
     try {
-      await apiCambiarPassword(passEmpId, p)
-      setPassMsg({ text: 'Contraseña actualizada correctamente', type: 'success' })
-      setTimeout(() => setShowPassModal(false), 1200)
+      await apiCambiarPassword(passEmpId, p);
+      setPassMsg({
+        text: "Contraseña actualizada correctamente",
+        type: "success",
+      });
+      setTimeout(() => setShowPassModal(false), 1200);
     } catch (err) {
-      console.error(err)
-      setPassMsg({ text: err.message || 'Error al cambiar contraseña', type: 'danger' })
+      console.error(err);
+      setPassMsg({
+        text: err.message || "Error al cambiar contraseña",
+        type: "danger",
+      });
     } finally {
-      setPassLoading(false)
+      setPassLoading(false);
     }
   }
 
@@ -201,15 +242,23 @@ export default function Empleados() {
       <main className="container my-4">
         <section className="hero mb-4 text-center fade-in">
           <h1 className="display-6 fw-bold mb-2">Gestión de Empleados</h1>
-          <p className="lead mb-0">Crea, edita y administra los usuarios del sistema.</p>
+          <p className="lead mb-0">
+            Crea, edita y administra los usuarios del sistema.
+          </p>
         </section>
 
         {/* Stats */}
         <div className="row g-3 mb-4">
           {[
-            { label: 'Total empleados', val: empleados.length },
-            { label: 'Cajeros', val: empleados.filter(e => e.rol === 'cajero').length },
-            { label: 'Administradores', val: empleados.filter(e => e.rol === 'admin').length },
+            { label: "Total empleados", val: empleados.length },
+            {
+              label: "Cajeros",
+              val: empleados.filter((e) => e.rol === "cajero").length,
+            },
+            {
+              label: "Administradores",
+              val: empleados.filter((e) => e.rol === "admin").length,
+            },
           ].map((s) => (
             <div className="col-md-4" key={s.label}>
               <div className="card card-soft text-center p-3">
@@ -225,17 +274,47 @@ export default function Empleados() {
           <div className="col-lg-4">
             <div className="card card-soft h-100">
               <div className="card-body">
-                <h5 className="mb-3">{editMode ? 'Editar empleado' : 'Nuevo empleado'}</h5>
+                <h5 className="mb-3">
+                  {editMode ? "Editar empleado" : "Nuevo empleado"}
+                </h5>
                 <form onSubmit={onSubmit}>
                   {[
-                    { name: 'nombres',   label: 'Nombres',   type: 'text',  required: true },
-                    { name: 'apellidos', label: 'Apellidos', type: 'text',  required: true },
-                    { name: 'documento', label: 'Documento', type: 'text',  required: false },
-                    { name: 'telefono',  label: 'Teléfono',  type: 'tel',   required: false },
-                    { name: 'usuario',   label: 'Usuario',   type: 'text',  required: true },
+                    {
+                      name: "nombres",
+                      label: "Nombres",
+                      type: "text",
+                      required: true,
+                    },
+                    {
+                      name: "apellidos",
+                      label: "Apellidos",
+                      type: "text",
+                      required: true,
+                    },
+                    {
+                      name: "documento",
+                      label: "Documento",
+                      type: "text",
+                      required: false,
+                    },
+                    {
+                      name: "telefono",
+                      label: "Teléfono",
+                      type: "tel",
+                      required: false,
+                    },
+                    {
+                      name: "usuario",
+                      label: "Usuario",
+                      type: "text",
+                      required: true,
+                    },
                   ].map(({ name, label, type, required }) => (
                     <div className="mb-3" key={name}>
-                      <label className="form-label">{label}{required && ' *'}</label>
+                      <label className="form-label">
+                        {label}
+                        {required && " *"}
+                      </label>
                       <input
                         type={type}
                         className="form-control"
@@ -261,41 +340,67 @@ export default function Empleados() {
                         autoComplete="new-password"
                         minLength={8}
                       />
-                      <div className="form-text">Mínimo 8 caracteres, con letras y números</div>
+                      <div className="form-text">
+                        Mínimo 8 caracteres, con letras y números
+                      </div>
                     </div>
                   )}
 
                   <div className="mb-3">
                     <label className="form-label">Rol *</label>
-                    <select className="form-select" name="rol" value={form.rol} onChange={onChange}>
-                      {roles.length > 0
-                        ? roles.map((r) => (
-                          <option key={r.id_rol} value={r.nombre_rol}>{r.nombre_rol}</option>
+                    <select
+                      className="form-select"
+                      name="rol"
+                      value={form.rol}
+                      onChange={onChange}
+                    >
+                      {roles.length > 0 ? (
+                        roles.map((r) => (
+                          <option key={r.id_rol} value={r.nombre_rol}>
+                            {r.nombre_rol}
+                          </option>
                         ))
-                        : <>
+                      ) : (
+                        <>
                           <option value="cajero">cajero</option>
                           <option value="admin">admin</option>
                         </>
-                      }
+                      )}
                     </select>
                   </div>
 
                   <div className="d-grid gap-2">
-                    <button type="submit" className="btn btn-brand" disabled={loading}>
-                      {loading
-                        ? <><span className="spinner-border spinner-border-sm me-2" />Guardando...</>
-                        : editMode ? 'Actualizar empleado' : 'Crear empleado'
-                      }
+                    <button
+                      type="submit"
+                      className="btn btn-brand"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" />
+                          Guardando...
+                        </>
+                      ) : editMode ? (
+                        "Actualizar empleado"
+                      ) : (
+                        "Crear empleado"
+                      )}
                     </button>
                     {editMode && (
-                      <button type="button" className="btn btn-outline-secondary" onClick={resetForm}>
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary"
+                        onClick={resetForm}
+                      >
                         Cancelar edición
                       </button>
                     )}
                   </div>
 
                   {msg.text && (
-                    <div className={`alert alert-${msg.type === 'danger' ? 'danger' : msg.type === 'success' ? 'success' : 'secondary'} mt-3 mb-0 py-2`}>
+                    <div
+                      className={`alert alert-${msg.type === "danger" ? "danger" : msg.type === "success" ? "success" : "secondary"} mt-3 mb-0 py-2`}
+                    >
                       {msg.text}
                     </div>
                   )}
@@ -310,7 +415,9 @@ export default function Empleados() {
               <div className="card-body">
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h5 className="mb-0">Empleados activos</h5>
-                  <span className="badge bg-info">{empleadosFiltrados.length}</span>
+                  <span className="badge bg-info">
+                    {empleadosFiltrados.length}
+                  </span>
                 </div>
                 <input
                   className="form-control mb-3"
@@ -331,24 +438,43 @@ export default function Empleados() {
                     <tbody>
                       {cargando ? (
                         Array.from({ length: 4 }).map((_, i) => (
-                          <tr key={i}><td colSpan={4}><div className="placeholder-wave"><span className="placeholder col-12" /></div></td></tr>
+                          <tr key={i}>
+                            <td colSpan={4}>
+                              <div className="placeholder-wave">
+                                <span className="placeholder col-12" />
+                              </div>
+                            </td>
+                          </tr>
                         ))
                       ) : empleadosFiltrados.length === 0 ? (
-                        <tr><td colSpan={4} className="text-center text-muted py-4">No hay empleados{search ? ' con ese filtro' : ''}.</td></tr>
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="text-center text-muted py-4"
+                          >
+                            No hay empleados{search ? " con ese filtro" : ""}.
+                          </td>
+                        </tr>
                       ) : (
                         empleadosFiltrados.map((emp) => (
                           <tr key={emp.id_empleado}>
                             <td>
-                              <div className="fw-semibold">{emp.nombres} {emp.apellidos}</div>
-                              <div className="small text-muted">@{emp.usuario_login}</div>
+                              <div className="fw-semibold">
+                                {emp.nombres} {emp.apellidos}
+                              </div>
+                              <div className="small text-muted">
+                                @{emp.usuario_login}
+                              </div>
                             </td>
                             <td className="text-center">
-                              <span className={`badge ${emp.rol === 'admin' ? 'bg-danger' : 'bg-info'}`}>
-                                {emp.rol || '—'}
+                              <span
+                                className={`badge ${emp.rol === "admin" ? "bg-danger" : "bg-info"}`}
+                              >
+                                {emp.rol || "—"}
                               </span>
                             </td>
                             <td className="text-center small text-muted">
-                              {emp.telefono || '—'}
+                              {emp.telefono || "—"}
                             </td>
                             <td className="text-end">
                               <div className="d-flex gap-1 justify-content-end flex-nowrap">
@@ -356,17 +482,23 @@ export default function Empleados() {
                                   className="btn btn-sm btn-outline-brand"
                                   onClick={() => startEditar(emp)}
                                   title="Editar datos"
-                                >Editar</button>
+                                >
+                                  Editar
+                                </button>
                                 <button
                                   className="btn btn-sm btn-outline-secondary"
                                   onClick={() => abrirModalPass(emp)}
                                   title="Cambiar contraseña"
-                                >🔑</button>
+                                >
+                                  🔑
+                                </button>
                                 <button
                                   className="btn btn-sm btn-outline-danger"
                                   onClick={() => pedirDesactivar(emp)}
                                   title="Desactivar"
-                                >✕</button>
+                                >
+                                  ✕
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -389,11 +521,17 @@ export default function Empleados() {
               <div className="modal-content border-0 shadow-lg">
                 <div className="modal-header">
                   <h5 className="modal-title">🔑 Cambiar contraseña</h5>
-                  <button type="button" className="btn-close" onClick={() => setShowPassModal(false)} />
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setShowPassModal(false)}
+                  />
                 </div>
                 <form onSubmit={cambiarPassword}>
                   <div className="modal-body">
-                    <p className="text-muted mb-3">Empleado: <strong>{passEmpNombre}</strong></p>
+                    <p className="text-muted mb-3">
+                      Empleado: <strong>{passEmpNombre}</strong>
+                    </p>
                     <div className="mb-3">
                       <label className="form-label">Nueva contraseña</label>
                       <input
@@ -406,35 +544,63 @@ export default function Empleados() {
                         autoFocus
                         autoComplete="new-password"
                       />
-                      <div className="form-text">Mínimo 8 caracteres, con letras y números</div>
+                      <div className="form-text">
+                        Mínimo 8 caracteres, con letras y números
+                      </div>
                     </div>
                     {passMsg.text && (
-                      <div className={`alert alert-${passMsg.type === 'danger' ? 'danger' : passMsg.type === 'success' ? 'success' : 'secondary'} py-2 mb-0`}>
+                      <div
+                        className={`alert alert-${passMsg.type === "danger" ? "danger" : passMsg.type === "success" ? "success" : "secondary"} py-2 mb-0`}
+                      >
                         {passMsg.text}
                       </div>
                     )}
                   </div>
                   <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setShowPassModal(false)}>Cancelar</button>
-                    <button type="submit" className="btn btn-brand" disabled={passLoading}>
-                      {passLoading ? <><span className="spinner-border spinner-border-sm me-2" />Guardando...</> : 'Guardar'}
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setShowPassModal(false)}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-brand"
+                      disabled={passLoading}
+                    >
+                      {passLoading ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" />
+                          Guardando...
+                        </>
+                      ) : (
+                        "Guardar"
+                      )}
                     </button>
                   </div>
                 </form>
               </div>
             </div>
           </div>
-          <div className="modal-backdrop fade show" onClick={() => setShowPassModal(false)} />
+          <div
+            className="modal-backdrop fade show"
+            onClick={() => setShowPassModal(false)}
+          />
         </>
       )}
 
       <ModalConfirmar
-        config={modalDesactivar ? { ...modalDesactivar, loading: loadingDesactivar } : null}
+        config={
+          modalDesactivar
+            ? { ...modalDesactivar, loading: loadingDesactivar }
+            : null
+        }
         onConfirm={() => desactivar(modalDesactivar.id)}
         onCancel={() => !loadingDesactivar && setModalDesactivar(null)}
       />
 
       <Footer />
     </>
-  )
+  );
 }

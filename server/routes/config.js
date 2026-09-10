@@ -1,22 +1,35 @@
 // Capa HTTP de la configuración del negocio.
-import express from 'express'
-import { asyncHandler } from '../lib/asyncHandler.js'
-import { verifyToken, requireAdmin } from '../middleware/auth.js'
-import { validate } from '../middleware/validate.js'
-import { configNegocioSchema } from '../schemas/index.js'
-import { configService } from '../container.js'
+import express from "express";
+import { asyncHandler } from "../lib/asyncHandler.js";
+import { verifyToken, requireAdmin } from "../middleware/auth.js";
+import { validate } from "../middleware/validate.js";
+import { configNegocioSchema } from "../schemas/index.js";
+import { configService } from "../container.js";
 
-const router = express.Router()
+const router = express.Router();
 
 // GET /api/config — cualquier usuario autenticado (lo usa el ticket).
-router.get('/', verifyToken, asyncHandler(async (_req, res) => {
-  res.json(await configService.obtener())
-}))
+router.get(
+  "/",
+  verifyToken,
+  asyncHandler(async (_req, res) => {
+    res.json(await configService.obtener());
+  }),
+);
 
 // PUT /api/config — sólo admin.
-router.put('/', verifyToken, requireAdmin, validate(configNegocioSchema), asyncHandler(async (req, res) => {
-  const cfg = await configService.actualizar(req.body ?? {}, req.user.id_empleado)
-  res.json({ message: 'Configuración actualizada', config: cfg })
-}))
+router.put(
+  "/",
+  verifyToken,
+  requireAdmin,
+  validate(configNegocioSchema),
+  asyncHandler(async (req, res) => {
+    const cfg = await configService.actualizar(
+      req.body ?? {},
+      req.user.id_empleado,
+    );
+    res.json({ message: "Configuración actualizada", config: cfg });
+  }),
+);
 
-export default router
+export default router;
