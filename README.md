@@ -122,7 +122,3 @@ npm run dev:all
 
 - Elvis
 - Juan Hernandez
-
-## 📄 Licencia
-
-_Pendiente de definir._
