@@ -120,5 +120,5 @@ npm run dev:all
 
 ## 👥 Autores
 
-- Elvis
+- Elvis Montoya
 - Juan Hernandez
